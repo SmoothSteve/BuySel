@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth/auth-context'
 import { useUserData } from '@/hooks/useUserData'
 import { useUserCache } from '@/hooks/useUserCache'
 import { useRouter } from 'next/navigation'
-import { getPhotoUrl } from '@/lib/azure-config'
+import { getPhotoUrl } from '@/lib/r2-config'
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 import { Seller } from '@/types/seller'
 

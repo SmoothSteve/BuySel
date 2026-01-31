@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { MapPin, Heart, Bed, Bath, Car, Home, Shield, CheckCircle, MessageCircle, FileText, Loader2, AlertCircle, Flame, Waves, Bug, Search, DollarSign } from 'lucide-react'
 import { Property } from '@/types/property'
-import { getPhotoUrl } from '@/lib/azure-config'
+import { getPhotoUrl } from '@/lib/r2-config'
 
 // Trust Badge Component
 interface TrustBadgeProps {

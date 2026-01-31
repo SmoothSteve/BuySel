@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { X, Download, Shield, AlertTriangle, Eye, Lock } from 'lucide-react'
-import { getPhotoUrl } from '@/lib/azure-config'
+import { getPhotoUrl } from '@/lib/r2-config'
 
 interface WatermarkedDocumentViewerProps {
   isOpen: boolean

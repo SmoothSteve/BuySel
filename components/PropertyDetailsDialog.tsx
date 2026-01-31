@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, MapPin, Bed, Bath, Car, Home, Maximize, Calendar, Building, ChevronLeft, ChevronRight, MessageCircle, Bug, FileText, Loader2, DollarSign } from 'lucide-react'
 import { Property } from '@/types/property'
-import { getPhotoUrl } from '@/lib/azure-config'
+import { getPhotoUrl } from '@/lib/r2-config'
 import ChatModal from './ChatModal'
 import WatermarkedDocumentViewer from './WatermarkedDocumentViewer'
 import MakeOfferDialog from './MakeOfferDialog'

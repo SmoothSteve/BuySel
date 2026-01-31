@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import toast, { Toaster } from 'react-hot-toast'
 import { Property } from '@/types/property'
 import { ArrowUp, ArrowDown, MessageCircle, User, Calendar, Home, DollarSign, Filter } from 'lucide-react'
-import { getPhotoUrl } from '@/lib/azure-config'
+import { getPhotoUrl } from '@/lib/r2-config'
 import { usePageView } from '@/hooks/useAudit'
 
 interface Conversation {

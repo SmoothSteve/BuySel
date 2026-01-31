@@ -6,7 +6,7 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import type { GoogleAutocomplete } from '@/types/google-maps'
 import { Property } from '@/types/property'
 import toast from 'react-hot-toast'
-import { getPhotoUrl } from '@/lib/azure-config'
+import { getPhotoUrl } from '@/lib/r2-config'
 
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 
