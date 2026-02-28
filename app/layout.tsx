@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
@@ -18,8 +18,6 @@ export const metadata: Metadata = {
   title: "BuySel",
   description: "BuySel - Buy and Sell properties",
   manifest: "/manifest.json",
-  themeColor: "#FF6600",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -31,6 +29,15 @@ export const metadata: Metadata = {
     apple: "/favicon.ico",
   },
 };
+
+export function generateViewport(): Viewport {
+  return {
+    themeColor: "#FF6600",
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  };
+}
 
 export default function RootLayout({
   children,
