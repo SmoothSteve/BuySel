@@ -44,3 +44,18 @@ next-env.d.ts
 # deployment artifacts
 /deploy/
 deploy.zip
+
+# Bubblewrap / TWA generated files
+android-app/
+android.keystore
+*.aab
+*.apk
+*.idsig
+.gradle/
+build/
+gradle/
+gradlew
+gradlew.bat
+manifest-checksum.txt
+store_icon.png
+twa-manifest.json
