@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 
+console.log('VAPID_EMAIL:', process.env.VAPID_EMAIL || 'MISSING');
+console.log('NEXT_PUBLIC_VAPID_PUBLIC_KEY:', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? 'YES (length ' + process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY.length + ')' : 'MISSING');
+console.log('VAPID_PRIVATE_KEY:', process.env.VAPID_PRIVATE_KEY ? 'YES (length ' + process.env.VAPID_PRIVATE_KEY.length + ')' : 'MISSING');
+
 interface PushPayload {
   title: string;
   body: string;
