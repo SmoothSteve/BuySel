@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useState, useEffect, useRef } from 'react'
 import { MapPin, List, Map, ListPlus, DollarSign } from 'lucide-react'

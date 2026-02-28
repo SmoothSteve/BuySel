@@ -1,3 +1,5 @@
+"use client";
+
 let isLoading = false
 let isLoaded = false
 const callbacks: Array<() => void> = []

@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, Shield, CheckCircle, Camera, List, Map as MapIcon, X, Heart } from 'lucide-react'

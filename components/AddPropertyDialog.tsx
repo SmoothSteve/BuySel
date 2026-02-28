@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Camera, X, Upload, ChevronLeft, ChevronRight, Plus, ArrowLeft, Home, Building2, Building, MapPin, Hash, Bed, Bath, Car, Maximize, Calendar, Flag, DollarSign, Loader2 } from 'lucide-react'

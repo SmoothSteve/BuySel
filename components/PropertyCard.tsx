@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react'
 import { MapPin, Heart, Bed, Bath, Car, Home, Shield, CheckCircle, MessageCircle, FileText, Loader2, AlertCircle, Flame, Waves, Bug, Search, DollarSign } from 'lucide-react'
 import { Property } from '@/types/property'
