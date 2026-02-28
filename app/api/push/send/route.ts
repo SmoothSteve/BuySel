@@ -3,12 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 
-// Configure web-push with VAPID details
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:admin@buysel.com.au',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+
 
 interface PushPayload {
   title: string;
@@ -20,6 +15,13 @@ interface PushPayload {
 
 export async function POST(request: NextRequest) {
   try {
+    // Configure web-push with VAPID details
+    webpush.setVapidDetails(
+      process.env.VAPID_EMAIL || 'mailto:admin@buysel.com.au',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+      process.env.VAPID_PRIVATE_KEY!
+    );
+    
     const body = await request.json();
     const { userId, payload } = body as {
       userId: number;
