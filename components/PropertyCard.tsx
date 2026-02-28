@@ -64,16 +64,16 @@ export default function PropertyCard({ property, onClick, onChatClick, onOfferCl
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
       <div className="relative h-48">
-        {property.photobloburl ? (
-          <img 
-            src={getPhotoUrl(property.photobloburl)!} 
-            alt={property.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-            <MapPin className="w-16 h-16 text-gray-400" />
-          </div>
+  {property && property.photobloburl ? (
+    <img 
+      src={getPhotoUrl(property.photobloburl) || '/placeholder.jpg'}  // fallback if getPhotoUrl returns null
+      alt={property.title || 'Property Image'}  // fallback alt text
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+      <MapPin className="w-16 h-16 text-gray-400" />
+    </div>
         )}
         <div className="absolute top-4 right-4 flex gap-2">
           {/* Seller offer indicator - flashing red dollar sign */}
