@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';

@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { MICROSOFT_CONFIG } from '@/lib/auth/oauth-config'
 import { getSession } from '@/lib/auth/session'

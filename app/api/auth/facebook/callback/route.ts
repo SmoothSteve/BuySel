@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { FACEBOOK_CONFIG, getRedirectUri } from '@/lib/auth/oauth-config'
 import { getSession } from '@/lib/auth/session'
