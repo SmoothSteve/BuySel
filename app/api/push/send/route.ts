@@ -3,8 +3,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 
-
-
 interface PushPayload {
   title: string;
   body: string;
@@ -15,13 +13,13 @@ interface PushPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    // Configure web-push with VAPID details
+    // VAPID setup — ONLY runs at request time (runtime), not build time
     webpush.setVapidDetails(
       process.env.VAPID_EMAIL || 'mailto:admin@buysel.com.au',
       process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
       process.env.VAPID_PRIVATE_KEY!
     );
-    
+
     const body = await request.json();
     const { userId, payload } = body as {
       userId: number;
@@ -116,7 +114,6 @@ export async function POST(request: NextRequest) {
         // If the subscription is invalid (410 Gone), remove it
         if (error.statusCode === 410) {
           console.log('[API] Subscription expired, removing...');
-          // Call Azure backend to remove the subscription
           await fetch(
             `https://buysel.azurewebsites.net/api/push/push_subscription/${subscription.id}`,
             {
@@ -136,10 +133,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Sent ${successCount}/${subscriptions.length} notifications`,
-      results
+      successCount,
+      total: subscriptions.length,
+      message: `Sent ${successCount}/${subscriptions.length} notifications`
     });
-
   } catch (error) {
     console.error('[API] Error in push send endpoint:', error);
     return NextResponse.json(
