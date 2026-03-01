@@ -20,11 +20,12 @@ interface Photo {
 }
 
 interface PropertyDetailsDialogProps {
-  property: Property
+  property?: Property | null
   onClose: () => void
 }
 
 export default function PropertyDetailsDialog({ property, onClose }: PropertyDetailsDialogProps) {
+  if (!property) return null
   const { userId, userRole } = useUserData()
 
   const { isAuthenticated, user } = useAuth()
