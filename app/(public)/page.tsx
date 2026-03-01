@@ -67,130 +67,132 @@ export default function HomePage() {
   }, [userId])
 
   const fetchProperties = async () => {
+  try {
+    const response = await fetch('/api/property')
+    if (response.ok) {
+      const data = await response.json()
+      setProperties(data)
+    }
+  } catch (error) {
+    console.error('Error fetching properties:', error)
+  } finally {
+    setLoading(false)
+  }
+}
+
+const fetchFavorites = async () => {
+  if (!userId) return
+  try {
+    const response = await fetch(`/api/userpropertyfav/${userId}`)
+    if (response.ok) {
+      const data = await response.json()
+      setFavs(data)
+    }
+  } catch (error) {
+    console.error('Error fetching favorites:', error)
+  }
+}
+
+const fetchOffers = async () => {
+  if (!userId) return
+  try {
+    const response = await fetch(`/api/offer/buyer/${userId}`)
+    if (response.ok) {
+      const data = await response.json()
+      setOffers(Array.isArray(data) ? data : [])
+    }
+  } catch (error) {
+    console.error('Error fetching offers:', error)
+  }
+}
+
+const handleFavToggle = async (propertyId: number, fav: boolean) => {
+  if (!userId) return
+
+  if (fav) {
     try {
-      const response = await fetch('https://buysel.azurewebsites.net/api/property')
+      const newFav = { user_id: userId, property_id: propertyId }
+
+      const response = await fetch('/api/userpropertyfav', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newFav)
+      })
+
       if (response.ok) {
-        const data = await response.json()
-        setProperties(data)
+        const createdFav = await response.json()
+        setFavs([...favs, createdFav])
       }
     } catch (error) {
-      console.error('Error fetching properties:', error)
-    } finally {
-      setLoading(false)
+      console.error('Error adding favorite:', error)
     }
-  }
+  } else {
+    const favToRemove = favs.find(f => f.property_id === propertyId)
+    if (!favToRemove) return
 
-  const fetchFavorites = async () => {
-    if (!userId) return
     try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/userpropertyfav/${userId}`)
+      const response = await fetch(`/api/userpropertyfav/${favToRemove.id}`, {
+        method: 'DELETE'
+      })
+
       if (response.ok) {
-        const data = await response.json()
-        setFavs(data)
+        setFavs(favs.filter(f => f.id !== favToRemove.id))
       }
     } catch (error) {
-      console.error('Error fetching favorites:', error)
+      console.error('Error removing favorite:', error)
     }
   }
+}
 
-  const fetchOffers = async () => {
-    if (!userId) return
-    try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/offer/buyer/${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setOffers(Array.isArray(data) ? data : [])
-      }
-    } catch (error) {
-      console.error('Error fetching offers:', error)
-    }
-  }
+const handleSearch = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
 
-  const handleFavToggle = async (propertyId: number, fav: boolean) => {
-    if (!userId) return
+  try {
+    const suburborpostcode = searchQuery || '~'
+    const bedsParam = beds || '0'
+    const bathsParam = baths || '0'
 
-    if (fav) {
-      // Add to favorites
-      try {
-        const newFav = { id: 0, user_id: userId, property_id: propertyId }
-        const response = await fetch('https://buysel.azurewebsites.net/api/userpropertyfav', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newFav)
-        })
-        if (response.ok) {
-          const createdFav = await response.json()
-          setFavs([...favs, createdFav])
-        }
-      } catch (error) {
-        console.error('Error adding favorite:', error)
-      }
+    const response = await fetch(
+      `/api/property/search?query=${suburborpostcode}&beds=${bedsParam}&baths=${bathsParam}`
+    )
+
+    if (response.ok) {
+      const data = await response.json()
+      setProperties(data)
     } else {
-      // Remove from favorites
-      const favToRemove = favs.find(f => f.property_id === propertyId)
-      if (favToRemove) {
-        try {
-          const response = await fetch(`https://buysel.azurewebsites.net/api/userpropertyfav/${favToRemove.id}`, {
-            method: 'DELETE'
-          })
-          if (response.ok) {
-            setFavs(favs.filter(f => f.id !== favToRemove.id))
-          }
-        } catch (error) {
-          console.error('Error removing favorite:', error)
-        }
-      }
+      console.error('Search failed')
     }
+  } catch (error) {
+    console.error('Error searching properties:', error)
+  } finally {
+    setLoading(false)
   }
+}
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      const suburborpostcode = searchQuery || '~'
-      const bedsParam = beds || '0'
-      const bathsParam = baths || '0'
-      const url = `https://buysel.azurewebsites.net/api/property/postsubbedbath/${suburborpostcode}/{bed}/{bath}?beds=${bedsParam}&baths=${bathsParam}`
-      //alert(url)
-      const response = await fetch(url)
-      if (response.ok) {
-        const data = await response.json()
-      //  alert(JSON.stringify(data))
-        setProperties(data)
-      }
-      else
-      {
-        alert(response.statusText)
-      }
-    } catch (error) {
-      alert('Error fetching properties:'+ error)
-    } finally {
-      setLoading(false)
+const handleClearSearch = () => {
+  setSearchQuery('')
+  setBeds('')
+  setBaths('')
+  fetchProperties()
+}
+
+const fetchFavouriteProperties = async () => {
+  if (!user?.email) return
+  setLoading(true)
+
+  try {
+    const response = await fetch(`/api/property/favs/${user.email}`)
+    if (response.ok) {
+      const data = await response.json()
+      setProperties(data)
     }
+  } catch (error) {
+    console.error('Error fetching favourite properties:', error)
+  } finally {
+    setLoading(false)
   }
-
-  const handleClearSearch = () => {
-    setSearchQuery('')
-    setBeds('')
-    setBaths('')
-    fetchProperties()
-  }
-
-  const fetchFavouriteProperties = async () => {
-    if (!user?.email) return
-    setLoading(true)
-    try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/property/favs/${user.email}`)
-      if (response.ok) {
-        const data = await response.json()
-        setProperties(data)
-      }
-    } catch (error) {
-      console.error('Error fetching favourite properties:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+}
 
   const filteredProperties = properties
 
