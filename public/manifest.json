@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "BuySel",
   "short_name": "BuySel",
   "description": "BuySel - Buy and Sell properties",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#FF6600",
@@ -12,13 +14,13 @@
       "src": "/logo192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/logo512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["business", "productivity", "utilities"]
