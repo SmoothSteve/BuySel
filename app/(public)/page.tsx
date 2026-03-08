@@ -83,7 +83,7 @@ export default function HomePage() {
 const fetchFavorites = async () => {
   if (!userId) return
   try {
-    const response = await fetch(`/api/userpropertyfav/${userId}`)
+    const response = await fetch(`/api/userpropertyfav/user/${userId}`)
     if (response.ok) {
       const data = await response.json()
       setFavs(data)
@@ -596,7 +596,7 @@ const fetchFavouriteProperties = async () => {
             // If not found locally, fetch from API
             if (!property) {
               try {
-                const response = await fetch(`https://buysel.azurewebsites.net/api/property/${propertyId}`)
+                const response = await fetch(`/api/property/${propertyId}`)
                 if (response.ok) {
                   property = await response.json()
                 }

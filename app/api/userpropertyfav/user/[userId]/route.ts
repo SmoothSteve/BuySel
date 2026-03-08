@@ -2,12 +2,12 @@ import { supabase } from '@/lib/supabase'
 
 export async function GET(
   request: Request,
-  { params }: { params: { email: string } }
+  { params }: { params: { userId: string } }
 ) {
   const { data, error } = await supabase
-    .from('properties')
+    .from('userpropertyfav')
     .select('*')
-    .eq('owner_email', params.email)
+    .eq('user_id', params.userId)
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 })
