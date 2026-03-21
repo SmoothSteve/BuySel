@@ -164,31 +164,33 @@ export default function SellerPage() {
   }, [userId])
 
   const fetchProperties = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const ep='https://buysel.azurewebsites.net/api/property/sellerusername/'+user?.email
-      //alert(ep)
-      const response = await fetch(ep)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const data = await response.json()
-      setProperties(data)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      console.error('Error fetching properties:', error)
-      setError(`Failed to load properties: ${errorMessage}`)
-      toast.error(`Failed to load properties: ${errorMessage}`)
-    } finally {
-      setLoading(false)
+  try {
+    setLoading(true)
+    setError(null)
+
+    const response = await fetch(`/api/property?seller=${user?.email}`)
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
+
+    const data = await response.json()
+    setProperties(data)
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    console.error('Error fetching properties:', error)
+    setError(`Failed to load properties: ${errorMessage}`)
+    toast.error(`Failed to load properties: ${errorMessage}`)
+  } finally {
+    setLoading(false)
   }
+}
 
   const fetchFavorites = async () => {
     if (!userId) return
     try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/userpropertyfav/${userId}`)
+      const response = await fetch(`/api/userpropertyfav/${userId}`)
       if (response.ok) {
         const data = await response.json()
         setFavs(data)
@@ -201,7 +203,7 @@ export default function SellerPage() {
   const fetchOffers = async () => {
     if (!userId) return
     try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/offer/seller/${userId}`)
+      const response = await fetch(`/api/offer/seller/${userId}`)
       if (response.ok) {
         const data: Offer[] = await response.json()
         setOffers(data)
@@ -248,26 +250,30 @@ export default function SellerPage() {
     }
   }
 
-  const handleAddProperty = async (property: Property) => {
-    try {
-      const jsn=JSON.stringify(property)
-      //alert(jsn);
-      const response = await fetch('https://buysel.azurewebsites.net/api/property', {
-        method: (property.id==0)?'POST':'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsn,
-      })
-      if (response.ok) {
-        toast.success('Property saved successfully!')
-        setNewProperty(null)
-        fetchProperties()
-      }
-    } catch (error) {
-      console.error('Error adding property:', error)
+const handleAddProperty = async (property: Property) => {
+  try {
+    const payload = {
+      ...property,
+      seller_email: user?.email // ✅ ADD THIS LINE
     }
+
+    const response = await fetch('/api/property', {
+      method: (property.id == 0) ? 'POST' : 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload), // ✅ use payload instead
+    })
+
+    if (response.ok) {
+      toast.success('Property saved successfully!')
+      setNewProperty(null)
+      fetchProperties()
+    }
+  } catch (error) {
+    console.error('Error adding property:', error)
   }
+}
 
   // Show loading state while checking authentication
   if (authLoading) {
