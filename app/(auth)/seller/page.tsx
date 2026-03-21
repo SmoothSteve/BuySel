@@ -55,21 +55,34 @@ export default function SellerPage() {
   const [showProfileDialog, setShowProfileDialog] = useState(false)
 
   useEffect(() => {
-    if (authLoading || userDataLoading) return // Still loading authentication status or user data
+  // Wait until auth + user data are fully loaded
+  if (authLoading || userDataLoading) return
 
-    if (!isAuthenticated) {
-      // Redirect to home page - they can sign in from there
-      router.push('/')
-    } else if (isAuthenticated && !isProfileComplete) {
-      // Profile is incomplete
-      toast.error('Please complete your profile to list properties', { duration: 5000 })
-      setShowProfileDialog(true)
-      setLoading(false)
-    } else if (isAuthenticated && isProfileComplete) {
-      // Profile is complete, fetch properties
-      fetchProperties()
-    }
-  }, [authLoading, isAuthenticated, router, isProfileComplete, userDataLoading])
+  // ❌ Not logged in → send to Google login
+  if (!isAuthenticated) {
+    sessionStorage.setItem('auth_callback_url', '/seller')
+    window.location.href = '/api/auth/google'
+    return
+  }
+
+  // ❌ Logged in but profile incomplete
+  if (!isProfileComplete) {
+    toast.error('Please complete your profile to list properties', {
+      duration: 5000,
+    })
+    setShowProfileDialog(true)
+    setLoading(false)
+    return
+  }
+
+  // ✅ Fully authenticated + profile complete
+  fetchProperties()
+}, [
+  authLoading,
+  userDataLoading,
+  isAuthenticated,
+  isProfileComplete,
+])
 
   const initializeMap = React.useCallback(() => {
     if (!mapRef.current || !window.google?.maps || properties.length === 0) return

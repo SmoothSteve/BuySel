@@ -46,18 +46,19 @@ export default function HomePage() {
   const googleMapRef = useRef<GoogleMap | null>(null)
 
   useEffect(() => {
-    fetchProperties()
-
-    // Check if we have a stored callback URL (workaround for Microsoft auth)
-    if (isAuthenticated) {
-      const storedCallbackUrl = sessionStorage.getItem('auth_callback_url')
-      if (storedCallbackUrl) {
-        sessionStorage.removeItem('auth_callback_url')
-        window.location.href = storedCallbackUrl
-        return
-      }
+  // Handle redirect AFTER login
+  if (isAuthenticated) {
+    const storedCallbackUrl = sessionStorage.getItem('auth_callback_url')
+    if (storedCallbackUrl) {
+      sessionStorage.removeItem('auth_callback_url')
+      window.location.href = storedCallbackUrl
+      return
     }
-  }, [isAuthenticated])
+  }
+
+  // ALWAYS fetch properties (logged in or not)
+  fetchProperties()
+}, [isAuthenticated])
 
   useEffect(() => {
     if (userId) {

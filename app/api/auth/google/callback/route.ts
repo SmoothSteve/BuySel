@@ -1,5 +1,6 @@
 export const runtime = 'edge';
 
+import { supabase } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { GOOGLE_CONFIG } from '@/lib/auth/oauth-config'
 import { getSession } from '@/lib/auth/session'
@@ -57,26 +58,36 @@ export async function GET(request: NextRequest) {
 
     const userInfo = await userResponse.json()
 
-    // Create or update user in database via C# backend
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/oauth`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // ✅ Create or fetch user in Supabase
+const { data: existingUser, error: fetchError } = await supabase
+  .from('users')
+  .select('*')
+  .eq('email', userInfo.email)
+  .single()
+
+let userData = existingUser
+
+if (fetchError || !existingUser) {
+  const { data: newUser, error: insertError } = await supabase
+    .from('users')
+    .insert([
+      {
         email: userInfo.email,
         name: userInfo.name,
         picture: userInfo.picture,
         provider: 'google',
-        providerId: userInfo.id,
-      }),
-    })
+        provider_id: userInfo.id,
+      },
+    ])
+    .select()
+    .single()
 
-    if (!backendResponse.ok) {
-      throw new Error('Failed to create/update user')
-    }
+  if (insertError) {
+    throw new Error(insertError.message)
+  }
 
-    const userData = await backendResponse.json()
+  userData = newUser
+}
 
     // Create session
     const session = await getSession()
@@ -91,8 +102,10 @@ export async function GET(request: NextRequest) {
     session.isLoggedIn = true
     await session.save()
 
-    // Get callback URL from cookie
-    const callbackUrl = request.cookies.get('oauth_callback_url')?.value || '/'
+    const callbackUrl =
+  request.cookies.get('oauth_callback_url')?.value ||
+  sessionStorage?.getItem?.('auth_callback_url') ||
+  '/'
 
     // Construct the full redirect URL using the correct origin
     const redirectUrl = new URL(callbackUrl, origin)
