@@ -102,10 +102,7 @@ if (fetchError || !existingUser) {
     session.isLoggedIn = true
     await session.save()
 
-    const callbackUrl =
-  request.cookies.get('oauth_callback_url')?.value ||
-  sessionStorage?.getItem?.('auth_callback_url') ||
-  '/'
+    const callbackUrl = request.cookies.get('oauth_callback_url')?.value || '/'
 
     // Construct the full redirect URL using the correct origin
     const redirectUrl = new URL(callbackUrl, origin)
