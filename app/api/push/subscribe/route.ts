@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/session';
+import { backendUrl } from '@/lib/server-config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Send subscription to Azure backend using email
     const response = await fetch(
-      'https://buysel.azurewebsites.net/api/push/push_subscription',
+      backendUrl('/api/push/push_subscription'),
       {
         method: 'POST',
         headers: {

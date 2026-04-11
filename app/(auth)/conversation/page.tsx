@@ -12,6 +12,7 @@ import { Property } from '@/types/property'
 import { ArrowUp, ArrowDown, MessageCircle, User, Calendar, Home, DollarSign, Filter } from 'lucide-react'
 import { getPhotoUrl } from '@/lib/r2-config'
 import { usePageView } from '@/hooks/useAudit'
+import { buildApiUrl } from '@/lib/config'
 
 interface Conversation {
   id: number
@@ -84,7 +85,7 @@ export default function ConversationPage() {
 
       // Fetch conversations
       const conversationsResponse = await fetch(
-        `https://buysel.azurewebsites.net/api/conversation/user/${userId}`
+        buildApiUrl(`/api/conversation/user/${userId}`)
       )
       if (!conversationsResponse.ok) {
         throw new Error(`Failed to fetch conversations: ${conversationsResponse.status}`)
@@ -92,14 +93,14 @@ export default function ConversationPage() {
       const conversationsData: Conversation[] = await conversationsResponse.json()
 
       // Fetch all users
-      const usersResponse = await fetch('https://buysel.azurewebsites.net/api/user')
+      const usersResponse = await fetch(buildApiUrl('/api/user'))
       if (!usersResponse.ok) {
         throw new Error(`Failed to fetch users: ${usersResponse.status}`)
       }
       const usersData: User[] = await usersResponse.json()
 
       // Fetch all properties
-      const propertiesResponse = await fetch('https://buysel.azurewebsites.net/api/property/all')
+      const propertiesResponse = await fetch(buildApiUrl('/api/property/all'))
       if (!propertiesResponse.ok) {
         throw new Error(`Failed to fetch properties: ${propertiesResponse.status}`)
       }
@@ -132,7 +133,7 @@ export default function ConversationPage() {
   const handleConversationClick = async (conversation: Conversation) => {
     try {
       // Fetch the property data
-      const response = await fetch(`https://buysel.azurewebsites.net/api/property/${conversation.property_id}`)
+      const response = await fetch(buildApiUrl(`/api/property/${conversation.property_id}`))
       if (!response.ok) {
         throw new Error('Failed to fetch property')
       }
