@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import type { GoogleAutocomplete } from '@/types/google-maps'
 import { loadGoogleMapsScript } from '@/utils/googleMapsLoader'
 import { BlobServiceClient } from '@azure/storage-blob'
-import { getAzureBlobUrl, config } from '@/lib/config'
+import { buildApiUrl, getPublicFileUrl, config } from '@/lib/config'
 import { invalidateUserDataCache } from '@/hooks/useUserData'
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 interface User {
@@ -92,23 +92,23 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(`https://buysel.azurewebsites.net/api/user/email/${email}`)
+      const response = await fetch(buildApiUrl(`/api/user/email/${email}`))
       if (response.ok) {
         const data = await response.json()
         if (data) {
           setUser(data)
           updateCompletedTabs(data)
           if (data.idbloburl) {
-            setIdPreview(getAzureBlobUrl(data.idbloburl))
+            setIdPreview(getPublicFileUrl(data.idbloburl))
           }
           if (data.ratesnotice) {
-            setRatesNoticePreview(getAzureBlobUrl(data.ratesnotice))
+            setRatesNoticePreview(getPublicFileUrl(data.ratesnotice))
           }
           if (data.titlesearch) {
-            setTitleSearchPreview(getAzureBlobUrl(data.titlesearch))
+            setTitleSearchPreview(getPublicFileUrl(data.titlesearch))
           }
           if (data.photoazurebloburl) {
-            setPhotoPreview(getAzureBlobUrl(data.photoazurebloburl))
+            setPhotoPreview(getPublicFileUrl(data.photoazurebloburl))
           }
         } else {
           setUser(createEmptyUser())
@@ -248,7 +248,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
   const uploadDocumentToAzure = async (file: File, docType: 'id' | 'rates' | 'title' | 'photo'): Promise<string> => {
     try {
       setUploading(true)
-      const { blobSasUrlBase, blobSasToken, blobContainer } = config.azure
+      const { azureBlobSasUrlBase: blobSasUrlBase, azureBlobSasToken: blobSasToken, azureBlobContainer: blobContainer } = config.storage
 
       if (!blobSasUrlBase || !blobSasToken || !blobContainer) {
         throw new Error('Azure Blob configuration is missing')
@@ -407,7 +407,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch('https://buysel.azurewebsites.net/api/user', {
+      const response = await fetch(buildApiUrl('/api/user'), {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -444,7 +444,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch('https://buysel.azurewebsites.net/api/user', {
+      const response = await fetch(buildApiUrl('/api/user'), {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -496,7 +496,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch('https://buysel.azurewebsites.net/api/user', {
+      const response = await fetch(buildApiUrl('/api/user'), {
         method,
         headers: {
           'Content-Type': 'application/json',
