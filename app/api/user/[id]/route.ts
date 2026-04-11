@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-
-const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
+import { getProfileById } from '@/lib/server/profile-store'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -12,15 +10,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 })
     }
 
-    const { data: profile, error } = await supabase
-      .from(TABLE)
-      .select('*')
-      .eq('id', numericId)
-      .maybeSingle()
-
-    if (error) {
-      throw new Error(`Failed to fetch profile by id: ${error.message}`)
-    }
+    const profile = await getProfileById(numericId)
     if (!profile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
