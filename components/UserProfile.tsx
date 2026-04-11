@@ -5,8 +5,7 @@ import { X, Save, Loader2, User, FileText, Scale, Camera, ChevronLeft, ChevronRi
 import toast from 'react-hot-toast'
 import type { GoogleAutocomplete } from '@/types/google-maps'
 import { loadGoogleMapsScript } from '@/utils/googleMapsLoader'
-import { BlobServiceClient } from '@azure/storage-blob'
-import { buildApiUrl, getPublicFileUrl, config } from '@/lib/config'
+import { getPublicFileUrl } from '@/lib/config'
 import { invalidateUserDataCache } from '@/hooks/useUserData'
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 interface User {
@@ -92,7 +91,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(buildApiUrl(`/api/user/email/${email}`))
+      const response = await fetch(`/api/user/email/${encodeURIComponent(email)}`)
       if (response.ok) {
         const data = await response.json()
         if (data) {
@@ -245,28 +244,26 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     }
   }, [isOpen, user, activeTab])
 
-  const uploadDocumentToAzure = async (file: File, docType: 'id' | 'rates' | 'title' | 'photo'): Promise<string> => {
+  const uploadDocumentToSupabase = async (file: File, docType: 'id' | 'rates' | 'title' | 'photo'): Promise<string> => {
     try {
       setUploading(true)
-      const { azureBlobSasUrlBase: blobSasUrlBase, azureBlobSasToken: blobSasToken, azureBlobContainer: blobContainer } = config.storage
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('email', email)
+      formData.append('docType', docType)
 
-      if (!blobSasUrlBase || !blobSasToken || !blobContainer) {
-        throw new Error('Azure Blob configuration is missing')
+      const response = await fetch('/api/user/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({ error: 'Upload failed' }))
+        throw new Error(payload.error || 'Upload failed')
       }
 
-      const blobName = `${docType}-${email.replace('@', '-')}-${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-      
-      const blockBlobClient = new BlobServiceClient(`${blobSasUrlBase}?${blobSasToken}`)
-        .getContainerClient(blobContainer)
-        .getBlockBlobClient(blobName)
-
-      await blockBlobClient.uploadData(file, {
-        blobHTTPHeaders: {
-          blobContentType: file.type
-        }
-      })
-      
-      return blobName
+      const payload = await response.json()
+      return payload.publicUrl || payload.path
     } catch (error) {
       console.error('Upload error:', error)
       throw error
@@ -308,7 +305,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
       }
       reader.readAsDataURL(file)
 
-      const blobUrl = await uploadDocumentToAzure(file, docType)
+      const blobUrl = await uploadDocumentToSupabase(file, docType)
       
       if (docType === 'id') {
         setUser({ ...user, idbloburl: blobUrl })
@@ -407,7 +404,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch(buildApiUrl('/api/user'), {
+      const response = await fetch('/api/user', {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -444,7 +441,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch(buildApiUrl('/api/user'), {
+      const response = await fetch('/api/user', {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -496,7 +493,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch(buildApiUrl('/api/user'), {
+      const response = await fetch('/api/user', {
         method,
         headers: {
           'Content-Type': 'application/json',
