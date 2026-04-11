@@ -21,6 +21,13 @@ interface ChatModalProps {
   initialConversationId?: string | null
 }
 
+interface ChatConversation {
+  id: number
+  property_id: number
+  buyer_id: number
+  seller_id: number
+}
+
 export default function ChatModal({ isOpen, onClose, property, currentUserId, initialConversationId }: ChatModalProps) {
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
@@ -127,7 +134,7 @@ export default function ChatModal({ isOpen, onClose, property, currentUserId, in
   useEffect(() => {
     // Mark all messages as read when conversation is loaded/changed
     if (conversationId && userId && messages.length > 0) {
-      markMessagesAsRead(messages, conversationId)
+      markMessagesAsRead(conversationId)
     }
   }, [conversationId, userId])
 
@@ -183,8 +190,8 @@ export default function ChatModal({ isOpen, onClose, property, currentUserId, in
         }
         
         if (convResponse && convResponse.ok) {
-          const conversations = await convResponse.json()
-          const convDetail = conversations.find((c: any) => c.id.toString() === initialConversationId)
+          const conversations: ChatConversation[] = await convResponse.json()
+          const convDetail = conversations.find((c) => c.id.toString() === initialConversationId)
           
           if (convDetail) {
             console.log('Found conversation details:', convDetail)
@@ -222,7 +229,7 @@ export default function ChatModal({ isOpen, onClose, property, currentUserId, in
           console.log('ChatModal: Loaded', messages.length, 'messages:', messages)
           
           // Mark unread messages as read
-          await markMessagesAsRead(messages, initialConversationId)
+          await markMessagesAsRead(initialConversationId)
 
           setMessages(messages.map((msg: Message) => ({
             ...msg,
@@ -243,10 +250,10 @@ export default function ChatModal({ isOpen, onClose, property, currentUserId, in
       }
       console.log('ChatModal: Conversation response status:', convResponse.status)
       if (convResponse && convResponse.ok) {
-        const conversations = await convResponse.json()
+        const conversations: ChatConversation[] = await convResponse.json()
         console.log('ChatModal: Found', conversations.length, 'conversations:', conversations)
         
-        const existingConv = conversations.find((c: any) => {
+        const existingConv = conversations.find((c) => {
           console.log('Checking conversation:', {
             conv_property_id: c.property_id,
             property_id: property.id,
@@ -298,7 +305,7 @@ export default function ChatModal({ isOpen, onClose, property, currentUserId, in
             console.log('ChatModal: Loaded', messages.length, 'messages:', messages)
             
             // Mark unread messages as read
-            await markMessagesAsRead(messages, existingConv.id.toString())
+            await markMessagesAsRead(existingConv.id.toString())
 
             setMessages(messages.map((msg: Message) => ({
               ...msg,
@@ -323,7 +330,7 @@ export default function ChatModal({ isOpen, onClose, property, currentUserId, in
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const markMessagesAsRead = async (messages: Message[], conversationId?: string) => {
+  const markMessagesAsRead = async (conversationId?: string) => {
     if (!userId || !conversationId) return
     
     try {
@@ -393,13 +400,13 @@ export default function ChatModal({ isOpen, onClose, property, currentUserId, in
               )
 
               if (newMessages.length > 0 && conversationId) {
-                const unreadFromOthers = newMessages.filter(msg => msg.senderId !== userId)
+                const unreadFromOthers = newMessages.filter(msg => msg.sender_id !== userId)
                 if (unreadFromOthers.length > 0) {
                   // Play notification sound for new messages from others
                   notificationSoundRef.current?.play().catch(err => {
                     console.log('Could not play notification sound:', err)
                   })
-                  markMessagesAsRead(unreadFromOthers.map(m => ({ id: parseInt(m.id) })), conversationId)
+                  markMessagesAsRead(conversationId)
                 }
               }
 
