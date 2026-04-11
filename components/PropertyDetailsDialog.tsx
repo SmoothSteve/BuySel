@@ -10,6 +10,7 @@ import MakeOfferDialog from './MakeOfferDialog'
 import { useAuth } from '@/hooks/useAuth'
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 import { useUserData } from '@/hooks/useUserData'
+import { buildApiUrl } from '@/lib/config'
 interface Photo {
   id: number
   propertyid: number
@@ -49,7 +50,7 @@ export default function PropertyDetailsDialog({ property, onClose }: PropertyDet
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        const response = await fetch(`https://buysel.azurewebsites.net/api/propertyphoto/${property.id}`)
+        const response = await fetch(buildApiUrl(`/api/propertyphoto/${property.id}`))
         if (response.ok) {
           const data = await response.json()
           setPhotos(data.filter((p: Photo) => !p.doc))
@@ -69,7 +70,7 @@ export default function PropertyDetailsDialog({ property, onClose }: PropertyDet
   const handleRequestProperty = async (req:string) => {
     setRequestingDoc(req)
     try {
-      const ep=`https://buysel.azurewebsites.net/api/user/email/${user?.email}`
+      const ep = buildApiUrl(`/api/user/email/${user?.email}`)
       //alert(ep)
 
 
@@ -94,7 +95,7 @@ export default function PropertyDetailsDialog({ property, onClose }: PropertyDet
 
       const jsn = JSON.stringify(payload)
       console.log('Requesting '+req+' Inspection with payload:', payload)
-      const response = await fetch('https://buysel.azurewebsites.net/api/propertybuyerdoc', {
+      const response = await fetch(buildApiUrl('/api/propertybuyerdoc'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

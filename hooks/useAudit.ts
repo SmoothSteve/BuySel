@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth/auth-context'
+import { buildApiUrl } from '@/lib/config'
 
 interface AuditParams {
   page: string
@@ -71,7 +72,7 @@ export function useAudit() {
         propertyid: propertyid || 0
       }
 
-      const response = await fetch('https://buysel.azurewebsites.net/api/audit', {
+      const response = await fetch(buildApiUrl('/api/audit'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

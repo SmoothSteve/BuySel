@@ -2,6 +2,7 @@
 
 import { Seller } from '@/types/seller'
 import { useState, useEffect, useCallback } from 'react'
+import { buildApiUrl } from '@/lib/config'
 
 /*interface UserData {
   id: number
@@ -82,7 +83,7 @@ export function useUserCache() {
     // Fetch from API
     try {
       console.log(`Fetching user ${userId} from API`)
-      const response = await fetch(`https://buysel.azurewebsites.net/api/user/${userId}`)
+      const response = await fetch(buildApiUrl(`/api/user/${userId}`))
       
       if (!response.ok) {
         console.error(`Failed to fetch user ${userId}: ${response.status}`)

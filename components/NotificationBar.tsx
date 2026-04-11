@@ -5,6 +5,7 @@ import { MessageCircle, X } from 'lucide-react'
 import Pusher from 'pusher-js'
 import { useAuth } from '@/hooks/useAuth'
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
+import { buildApiUrl } from '@/lib/config'
 interface Notification {
   id: string
   conversationId: string
@@ -71,7 +72,7 @@ export default function NotificationBar({ onOpenChat }: NotificationBarProps) {
       
       // Fetch property details
       try {
-        const propResponse = await fetch(`https://buysel.azurewebsites.net/api/property/${data.propertyId}`)
+        const propResponse = await fetch(buildApiUrl(`/api/property/${data.propertyId}`))
         const property = await propResponse.json()
         
         const notification: Notification = {

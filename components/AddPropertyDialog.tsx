@@ -7,6 +7,7 @@ import type { GoogleAutocomplete } from '@/types/google-maps'
 import { Property } from '@/types/property'
 import toast from 'react-hot-toast'
 import { getPhotoUrl } from '@/lib/r2-config'
+import { buildApiUrl } from '@/lib/config'
 
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 
@@ -54,7 +55,7 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
   const correctDateForTimezone = useTimezoneCorrection()
   const fetchPhotos = useCallback(async () => {
     try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/propertyphoto/${property.id}`)
+      const response = await fetch(buildApiUrl(`/api/propertyphoto/${property.id}`))
       if (response.ok) {
         const data = await response.json()
         setPhotos(data)
@@ -274,7 +275,7 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     try {
       const blobUrl = await uploadPhotoToAzure(capturedPhoto)
 
-      await fetch('https://buysel.azurewebsites.net/api/propertyphoto', {
+      await fetch(buildApiUrl('/api/propertyphoto'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -416,7 +417,7 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
 
   const saveProperty = async () => {
     try {
-      const response = await fetch('https://buysel.azurewebsites.net/api/property', {
+      const response = await fetch(buildApiUrl('/api/property'), {
         method: property.id === 0 ? 'POST' : 'PUT',
         headers: {
           'Content-Type': 'application/json',
