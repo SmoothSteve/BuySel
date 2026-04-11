@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
+import { backendUrl } from '@/lib/server-config';
 
 console.log('VAPID_EMAIL:', process.env.VAPID_EMAIL || 'MISSING');
 console.log('NEXT_PUBLIC_VAPID_PUBLIC_KEY:', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? 'YES (length ' + process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY.length + ')' : 'MISSING');
@@ -14,6 +15,15 @@ interface PushPayload {
   url?: string;
   conversationId?: string;
   propertyId?: number;
+}
+
+interface StoredSubscription {
+  id: number
+  subscription_data: webpush.PushSubscription
+}
+
+interface WebPushError extends Error {
+  statusCode?: number
 }
 
 export async function POST(request: NextRequest) {
@@ -42,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // First, get user's email from userId
     const userResponse = await fetch(
-      `https://buysel.azurewebsites.net/api/user/${userId}`,
+      backendUrl(`/api/user/${userId}`),
       {
         method: 'GET',
         headers: {
@@ -74,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch user's push subscriptions from Azure backend using email
     const subscriptionsResponse = await fetch(
-      `https://buysel.azurewebsites.net/api/push/push_subscription/email/${encodeURIComponent(userEmail)}`,
+      backendUrl(`/api/push/push_subscription/email/${encodeURIComponent(userEmail)}`),
       {
         method: 'GET',
         headers: {
@@ -92,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     const subscriptionsData = await subscriptionsResponse.json();
-    const subscriptions = subscriptionsData.subscriptions || [];
+    const subscriptions: StoredSubscription[] = subscriptionsData.subscriptions || [];
 
     if (subscriptions.length === 0) {
       console.log('[API] No subscriptions found for user:', userId, 'email:', userEmail);
@@ -105,7 +115,7 @@ export async function POST(request: NextRequest) {
     console.log(`[API] Found ${subscriptions.length} subscription(s) for email:`, userEmail);
 
     // Send push notification to all user's subscriptions
-    const pushPromises = subscriptions.map(async (subscription: any) => {
+    const pushPromises = subscriptions.map(async (subscription: StoredSubscription) => {
       try {
         await webpush.sendNotification(
           subscription.subscription_data,
@@ -113,21 +123,22 @@ export async function POST(request: NextRequest) {
         );
         console.log('[API] Push notification sent successfully');
         return { success: true };
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const webPushError = error as WebPushError
         console.error('[API] Error sending push notification:', error);
 
         // If the subscription is invalid (410 Gone), remove it
-        if (error.statusCode === 410) {
+        if (webPushError.statusCode === 410) {
           console.log('[API] Subscription expired, removing...');
           await fetch(
-            `https://buysel.azurewebsites.net/api/push/push_subscription/${subscription.id}`,
+            backendUrl(`/api/push/push_subscription/${subscription.id}`),
             {
               method: 'DELETE',
             }
           ).catch(err => console.error('[API] Failed to remove expired subscription:', err));
         }
 
-        return { success: false, error: error.message };
+        return { success: false, error: webPushError.message };
       }
     });
 

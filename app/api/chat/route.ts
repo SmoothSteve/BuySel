@@ -2,7 +2,11 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { Property } from '@/types/property'
+import { backendUrl } from '@/lib/server-config'
+
+interface ConversationSummary {
+  property_id: number
+}
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
@@ -19,7 +23,7 @@ export async function GET(req: NextRequest) {
   try {
     if (conversationId) {
       // Get messages for a specific conversation
-      const messageUrl = `https://buysel.azurewebsites.net/api/message/conversation/${conversationId}`
+      const messageUrl = backendUrl(`/api/message/conversation/${conversationId}`)
       console.log('🔵 Fetching messages from:', messageUrl)
       const response = await fetch(messageUrl)
       const messages = await response.json()
@@ -27,7 +31,7 @@ export async function GET(req: NextRequest) {
     } else {
       // Get all conversations for the user
       // First, we need to get the user's numeric ID from their email
-      const userEmailUrl = `https://buysel.azurewebsites.net/api/user/email/${encodeURIComponent(session.user.email!)}`
+      const userEmailUrl = backendUrl(`/api/user/email/${encodeURIComponent(session.user.email!)}`)
       console.log('🔵 Fetching user by email from:', userEmailUrl)
       const userResponse = await fetch(userEmailUrl)
       if (!userResponse.ok) {
@@ -37,7 +41,7 @@ export async function GET(req: NextRequest) {
       const userData = await userResponse.json()
       const userId = userData.id
       
-      const url = `https://buysel.azurewebsites.net/api/conversation/user/${userId}`
+      const url = backendUrl(`/api/conversation/user/${userId}`)
       console.log('🔵 Fetching conversations from:', url)
       console.log('User ID:', userId)
       console.log('Property ID filter:', propertyId)
@@ -66,7 +70,7 @@ export async function GET(req: NextRequest) {
         // Filter by property ID if specified
         if (propertyId) {
           console.log('Filtering conversations for property:', propertyId)
-          conversations = conversations.filter((conv: any) => 
+          conversations = conversations.filter((conv: ConversationSummary) => 
             conv.property_id === parseInt(propertyId)
           )
         }
@@ -97,7 +101,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Get user's numeric ID from email
-    const userEmailUrl = `https://buysel.azurewebsites.net/api/user/email/${encodeURIComponent(session.user.email!)}`
+    const userEmailUrl = backendUrl(`/api/user/email/${encodeURIComponent(session.user.email!)}`)
     console.log('🔵 POST: Fetching user by email from:', userEmailUrl)
     const userResponse = await fetch(userEmailUrl)
     if (!userResponse.ok) {
@@ -123,7 +127,7 @@ export async function POST(req: NextRequest) {
       // Current user is the buyer
       buyerId = userId
       actualSellerId = providedSellerId
-      const convUrl = 'https://buysel.azurewebsites.net/api/conversation'
+      const convUrl = backendUrl('/api/conversation')
       console.log('🔵 Creating conversation at:', convUrl)
       console.log('Payload:', {
         id: 0, // New record
@@ -170,7 +174,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // If using existing conversation, get buyer and seller IDs
-      const convDetailUrl = `https://buysel.azurewebsites.net/api/conversation/${convId}`
+      const convDetailUrl = backendUrl(`/api/conversation/${convId}`)
       console.log('🔵 Fetching conversation details from:', convDetailUrl)
       let convDetailResponse
       try {
@@ -200,7 +204,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create message
-    const messageUrl = 'https://buysel.azurewebsites.net/api/message'
+    const messageUrl = backendUrl('/api/message')
     console.log('🔵 Sending message to:', messageUrl)
     console.log('Message payload:', {
       id: 0, // New record
@@ -241,12 +245,8 @@ export async function POST(req: NextRequest) {
     })
     
     // Get sender info for notification
-    const senderResponse = await fetch(`https://buysel.azurewebsites.net/api/user/${userId}`)
+    const senderResponse = await fetch(backendUrl(`/api/user/${userId}`))
     const senderData = await senderResponse.json()
-
-    // Get property info for notification
-    const propertyResponse = await fetch(`https://buysel.azurewebsites.net/api/property/${propertyId}`)
-    const propertyData:Property = await propertyResponse.json()
 
     // Send Web Push notification to recipient
     console.log('🔔 NOTIFICATION SUMMARY:')
