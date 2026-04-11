@@ -4,7 +4,7 @@ import { useState, Dispatch, SetStateAction } from 'react'
 import { X, CheckCircle, XCircle, User, Mail, Phone, MapPin, Calendar, Shield, Activity, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Seller } from '@/types/seller'
-import { getAzureBlobUrl } from '@/lib/config'
+import { buildApiUrl, getPublicFileUrl } from '@/lib/config'
 import { invalidateUserDataCache } from '@/hooks/useUserData'
 
 interface UserDetailsModalProps {
@@ -104,7 +104,7 @@ export default function UserDetailsModal({
                     <div className="space-y-4">
                       <div className="flex justify-center">
                         <img
-                          src={getAzureBlobUrl(selectedSeller.photoazurebloburl)}
+                          src={getPublicFileUrl(selectedSeller.photoazurebloburl)}
                           alt="Selfie Photo"
                           className="w-64 h-64 object-cover rounded-full border-4 border-gray-300 shadow-lg"
                         />
@@ -132,7 +132,7 @@ export default function UserDetailsModal({
                               }
 
                               try {
-                                const response = await fetch('https://buysel.azurewebsites.net/api/user', {
+                                const response = await fetch(buildApiUrl('/api/user'), {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(updatedData)
@@ -203,7 +203,7 @@ export default function UserDetailsModal({
                   {selectedSeller.titlesearch && selectedSeller.titlesearch.trim() !== '' ? (
                     <div className="space-y-4">
                       <img
-                        src={getAzureBlobUrl(selectedSeller.titlesearch)}
+                        src={getPublicFileUrl(selectedSeller.titlesearch)}
                         alt="Title Search"
                         className="w-full max-h-96 object-contain rounded-lg border border-gray-300"
                       />
@@ -230,7 +230,7 @@ export default function UserDetailsModal({
                               }
 
                               try {
-                                const response = await fetch('https://buysel.azurewebsites.net/api/user', {
+                                const response = await fetch(buildApiUrl('/api/user'), {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(updatedData)
@@ -301,7 +301,7 @@ export default function UserDetailsModal({
                   {selectedSeller.ratesnotice && selectedSeller.ratesnotice.trim() !== '' ? (
                     <div className="space-y-4">
                       <img
-                        src={getAzureBlobUrl(selectedSeller.ratesnotice)}
+                        src={getPublicFileUrl(selectedSeller.ratesnotice)}
                         alt="Rates Notice"
                         className="w-full max-h-96 object-contain rounded-lg border border-gray-300"
                       />
@@ -328,7 +328,7 @@ export default function UserDetailsModal({
                               }
 
                               try {
-                                const response = await fetch('https://buysel.azurewebsites.net/api/user', {
+                                const response = await fetch(buildApiUrl('/api/user'), {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(updatedData)
@@ -499,7 +499,7 @@ export default function UserDetailsModal({
                   {selectedSeller.idbloburl && selectedSeller.idbloburl.trim() !== '' ? (
                     <div className="space-y-4">
                       <img
-                        src={getAzureBlobUrl(selectedSeller.idbloburl)}
+                        src={getPublicFileUrl(selectedSeller.idbloburl)}
                         alt="ID Document"
                         className="w-full max-h-96 object-contain rounded-lg border border-gray-300"
                       />
@@ -526,7 +526,7 @@ export default function UserDetailsModal({
                               }
 
                               try {
-                                const response = await fetch('https://buysel.azurewebsites.net/api/user', {
+                                const response = await fetch(buildApiUrl('/api/user'), {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(updatedData)

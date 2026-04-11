@@ -6,6 +6,7 @@ import { Property } from '@/types/property'
 import { CreateOfferRequest, CreateOfferConditionRequest, CreateOfferHistoryRequest, QLD_STANDARD_CONDITIONS, SETTLEMENT_OPTIONS, OfferConditions } from '@/types/offer'
 import { useUserCache } from '@/hooks/useUserCache'
 import { Seller } from '@/types/seller'
+import { buildApiUrl } from '@/lib/config'
 
 interface MakeOfferDialogProps {
   isOpen: boolean
@@ -140,7 +141,7 @@ export default function MakeOfferDialog({
         version: 1
       }
 
-      const response = await fetch('https://buysel.azurewebsites.net/api/offer', {
+      const response = await fetch(buildApiUrl('/api/offer'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -217,7 +218,7 @@ export default function MakeOfferDialog({
 
       // POST all conditions
       for (const condition of conditionsToCreate) {
-        await fetch('https://buysel.azurewebsites.net/api/offercondition', {
+        await fetch(buildApiUrl('/api/offercondition'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -236,7 +237,7 @@ export default function MakeOfferDialog({
         message: 'Offer submitted'
       }
 
-      await fetch('https://buysel.azurewebsites.net/api/offerhistory', {
+      await fetch(buildApiUrl('/api/offerhistory'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -304,7 +305,7 @@ export default function MakeOfferDialog({
             Your offer of ${formatCurrency(offerAmount)} has been sent to the seller.
           </p>
           <p className="text-sm text-gray-500">
-            You'll be notified when the seller responds.
+            You&apos;ll be notified when the seller responds.
           </p>
         </div>
       </div>
@@ -509,7 +510,7 @@ export default function MakeOfferDialog({
               <ul className="list-disc list-inside space-y-1 text-blue-700">
                 <li>The seller will be notified of your offer</li>
                 <li>They can accept, reject, or make a counter-offer</li>
-                <li>You'll receive a notification when they respond</li>
+                <li>You&apos;ll receive a notification when they respond</li>
               </ul>
             </div>
           </div>

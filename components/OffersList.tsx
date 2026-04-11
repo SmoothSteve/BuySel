@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Offer, OfferConditions, OfferStatus, OfferConditionRecord, OfferHistoryRecord, CreateOfferHistoryRequest } from '@/types/offer'
 import { Property } from '@/types/property'
+import { buildApiUrl } from '@/lib/config'
 
 interface OffersListProps {
   propertyId?: number
@@ -61,11 +62,11 @@ export default function OffersList({
     setError(null)
 
     try {
-      let url = 'https://buysel.azurewebsites.net/api/offer'
+      let url = buildApiUrl('/api/offer')
       if (propertyId) {
-        url = `https://buysel.azurewebsites.net/api/offer/property/${propertyId}`
+        url = buildApiUrl(`/api/offer/property/${propertyId}`)
       } else if (buyerId) {
-        url = `https://buysel.azurewebsites.net/api/offer/buyer/${buyerId}`
+        url = buildApiUrl(`/api/offer/buyer/${buyerId}`)
       }
 
       const response = await fetch(url)
@@ -101,7 +102,7 @@ export default function OffersList({
         updated_at: new Date().toISOString()
       }
 
-      const response = await fetch('https://buysel.azurewebsites.net/api/offer', {
+      const response = await fetch(buildApiUrl('/api/offer'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +180,7 @@ export default function OffersList({
 
   const fetchConditions = async (offerId: number) => {
     try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/offercondition/${offerId}`)
+      const response = await fetch(buildApiUrl(`/api/offercondition/${offerId}`))
       if (response.ok) {
         const data = await response.json()
         setOfferConditions(prev => ({
@@ -201,7 +202,7 @@ export default function OffersList({
         satisfied_at: !condition.is_satisfied ? new Date().toISOString() : null
       }
 
-      const response = await fetch('https://buysel.azurewebsites.net/api/offercondition', {
+      const response = await fetch(buildApiUrl('/api/offercondition'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -247,7 +248,7 @@ export default function OffersList({
 
   const fetchHistory = async (offerId: number) => {
     try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/offerhistory/${offerId}`)
+      const response = await fetch(buildApiUrl(`/api/offerhistory/${offerId}`))
       if (response.ok) {
         const data = await response.json()
         setOfferHistory(prev => ({
@@ -277,7 +278,7 @@ export default function OffersList({
       message: message
     }
 
-    await fetch('https://buysel.azurewebsites.net/api/offerhistory', {
+    await fetch(buildApiUrl('/api/offerhistory'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
