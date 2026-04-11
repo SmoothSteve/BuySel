@@ -212,10 +212,15 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
   }, [cameraStream, showCameraModal])
 
   useEffect(() => {
-    if (isOpen && addressInputRef.current && !autocompleteRef.current && activeTab === 'personal') {
-      const initAutocomplete = () => {
-        if (!addressInputRef.current || !window.google?.maps?.places) return
+    if (!isOpen || activeTab !== 'personal' || !addressInputRef.current) return
 
+    let isCancelled = false
+
+    const initAutocomplete = async () => {
+      await loadGoogleMapsScript()
+      if (isCancelled || !addressInputRef.current || !window.google?.maps?.places) return
+
+      if (!autocompleteRef.current) {
         autocompleteRef.current = new window.google.maps.places.Autocomplete(
           addressInputRef.current,
           {
@@ -226,23 +231,25 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
         autocompleteRef.current.addListener('place_changed', () => {
           const place = autocompleteRef.current?.getPlace()
-          if (place?.formatted_address && user) {
-            setUser({ ...user, address: place.formatted_address })
+          if (place?.formatted_address) {
+            setUser((prev) => (prev ? { ...prev, address: place.formatted_address || '' } : prev))
           }
         })
       }
-
-      loadGoogleMapsScript().then(() => {
-        initAutocomplete()
-      })
     }
+
+    initAutocomplete().catch((error) => {
+      console.error('Failed to initialize address autocomplete:', error)
+    })
 
     return () => {
-      if (autocompleteRef.current) {
+      isCancelled = true
+      if (activeTab !== 'personal' && autocompleteRef.current) {
         window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current)
+        autocompleteRef.current = null
       }
     }
-  }, [isOpen, user, activeTab])
+  }, [isOpen, activeTab])
 
   const uploadDocumentToSupabase = async (file: File, docType: 'id' | 'rates' | 'title' | 'photo'): Promise<string> => {
     try {
@@ -421,6 +428,8 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
         invalidateUserDataCache() // Invalidate cache for all components
         toast.success('Profile saved successfully!')
       } else {
+        const errorText = await response.text()
+        console.error('Failed to save profile:', response.status, errorText)
         toast.error('Failed to save profile')
         setError('Failed to save profile')
       }
@@ -459,6 +468,8 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
         toast.success('Profile saved successfully!')
         onClose() // Close the dialog after successful save
       } else {
+        const errorText = await response.text()
+        console.error('Failed to save profile:', response.status, errorText)
         toast.error('Failed to save profile')
         setError('Failed to save profile')
       }
