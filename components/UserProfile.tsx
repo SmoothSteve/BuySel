@@ -5,8 +5,7 @@ import { X, Save, Loader2, User, FileText, Scale, Camera, ChevronLeft, ChevronRi
 import toast from 'react-hot-toast'
 import type { GoogleAutocomplete } from '@/types/google-maps'
 import { loadGoogleMapsScript } from '@/utils/googleMapsLoader'
-import { BlobServiceClient } from '@azure/storage-blob'
-import { buildApiUrl, getPublicFileUrl, config } from '@/lib/config'
+import { getPublicFileUrl } from '@/lib/config'
 import { invalidateUserDataCache } from '@/hooks/useUserData'
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 interface User {
@@ -92,7 +91,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(buildApiUrl(`/api/user/email/${email}`))
+      const response = await fetch(`/api/user/email/${encodeURIComponent(email)}`)
       if (response.ok) {
         const data = await response.json()
         if (data) {
@@ -213,10 +212,15 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
   }, [cameraStream, showCameraModal])
 
   useEffect(() => {
-    if (isOpen && addressInputRef.current && !autocompleteRef.current && activeTab === 'personal') {
-      const initAutocomplete = () => {
-        if (!addressInputRef.current || !window.google?.maps?.places) return
+    if (!isOpen || activeTab !== 'personal' || !addressInputRef.current) return
 
+    let isCancelled = false
+
+    const initAutocomplete = async () => {
+      await loadGoogleMapsScript()
+      if (isCancelled || !addressInputRef.current || !window.google?.maps?.places) return
+
+      if (!autocompleteRef.current) {
         autocompleteRef.current = new window.google.maps.places.Autocomplete(
           addressInputRef.current,
           {
@@ -227,46 +231,46 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
         autocompleteRef.current.addListener('place_changed', () => {
           const place = autocompleteRef.current?.getPlace()
-          if (place?.formatted_address && user) {
-            setUser({ ...user, address: place.formatted_address })
+          if (place?.formatted_address) {
+            setUser((prev) => (prev ? { ...prev, address: place.formatted_address || '' } : prev))
           }
         })
       }
-
-      loadGoogleMapsScript().then(() => {
-        initAutocomplete()
-      })
     }
+
+    initAutocomplete().catch((error) => {
+      console.error('Failed to initialize address autocomplete:', error)
+    })
 
     return () => {
-      if (autocompleteRef.current) {
+      isCancelled = true
+      if (activeTab !== 'personal' && autocompleteRef.current) {
         window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current)
+        autocompleteRef.current = null
       }
     }
-  }, [isOpen, user, activeTab])
+  }, [isOpen, activeTab])
 
-  const uploadDocumentToAzure = async (file: File, docType: 'id' | 'rates' | 'title' | 'photo'): Promise<string> => {
+  const uploadDocumentToSupabase = async (file: File, docType: 'id' | 'rates' | 'title' | 'photo'): Promise<string> => {
     try {
       setUploading(true)
-      const { azureBlobSasUrlBase: blobSasUrlBase, azureBlobSasToken: blobSasToken, azureBlobContainer: blobContainer } = config.storage
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('email', email)
+      formData.append('docType', docType)
 
-      if (!blobSasUrlBase || !blobSasToken || !blobContainer) {
-        throw new Error('Azure Blob configuration is missing')
+      const response = await fetch('/api/user/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({ error: 'Upload failed' }))
+        throw new Error(payload.error || 'Upload failed')
       }
 
-      const blobName = `${docType}-${email.replace('@', '-')}-${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-      
-      const blockBlobClient = new BlobServiceClient(`${blobSasUrlBase}?${blobSasToken}`)
-        .getContainerClient(blobContainer)
-        .getBlockBlobClient(blobName)
-
-      await blockBlobClient.uploadData(file, {
-        blobHTTPHeaders: {
-          blobContentType: file.type
-        }
-      })
-      
-      return blobName
+      const payload = await response.json()
+      return payload.publicUrl || payload.path
     } catch (error) {
       console.error('Upload error:', error)
       throw error
@@ -308,7 +312,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
       }
       reader.readAsDataURL(file)
 
-      const blobUrl = await uploadDocumentToAzure(file, docType)
+      const blobUrl = await uploadDocumentToSupabase(file, docType)
       
       if (docType === 'id') {
         setUser({ ...user, idbloburl: blobUrl })
@@ -401,13 +405,19 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
   const handleSave = async () => {
     if (!user) return
+    const validationError = validateProfileForSave(user)
+    if (validationError) {
+      toast.error(validationError)
+      setError(validationError)
+      return
+    }
 
     setSaving(true)
     setError(null)
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch(buildApiUrl('/api/user'), {
+      const response = await fetch('/api/user', {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -424,8 +434,11 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
         invalidateUserDataCache() // Invalidate cache for all components
         toast.success('Profile saved successfully!')
       } else {
-        toast.error('Failed to save profile')
-        setError('Failed to save profile')
+        const errorPayload = await response.json().catch(() => null)
+        const details = errorPayload?.details || errorPayload?.error || 'Failed to save profile'
+        console.error('Failed to save profile:', response.status, details)
+        toast.error(details)
+        setError(details)
       }
     } catch (error) {
       console.error('Error saving user:', error)
@@ -438,13 +451,19 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
   const handleSaveAndExit = async () => {
     if (!user) return
+    const validationError = validateProfileForSave(user)
+    if (validationError) {
+      toast.error(validationError)
+      setError(validationError)
+      return
+    }
 
     setSaving(true)
     setError(null)
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch(buildApiUrl('/api/user'), {
+      const response = await fetch('/api/user', {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -462,8 +481,11 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
         toast.success('Profile saved successfully!')
         onClose() // Close the dialog after successful save
       } else {
-        toast.error('Failed to save profile')
-        setError('Failed to save profile')
+        const errorPayload = await response.json().catch(() => null)
+        const details = errorPayload?.details || errorPayload?.error || 'Failed to save profile'
+        console.error('Failed to save profile:', response.status, details)
+        toast.error(details)
+        setError(details)
       }
     } catch (error) {
       console.error('Error saving user:', error)
@@ -475,6 +497,16 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
   }
 
   const getCurrentTabIndex = () => tabs.findIndex(tab => tab.id === activeTab)
+
+  const validateProfileForSave = (userData: User): string | null => {
+    if (!userData.firstname?.trim()) return 'First name is required'
+    if (!userData.lastname?.trim()) return 'Last name is required'
+    if (!userData.mobile?.trim()) return 'Mobile number is required'
+    if (!userData.address?.trim()) return 'Residential address is required'
+    if (!userData.dateofbirth) return 'Date of birth is required'
+    if (!userData.residencystatus) return 'Residency status is required'
+    return null
+  }
   
   const prepareUserForSave = (userData: User) => {
     return {
@@ -496,7 +528,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
     try {
       const method = user.id === 0 ? 'POST' : 'PUT'
       const userDataToSave = prepareUserForSave(user)
-      const response = await fetch(buildApiUrl('/api/user'), {
+      const response = await fetch('/api/user', {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -711,7 +743,6 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
                         </div>
                       )}
                       <div className="flex justify-center">
-                        {user.photoazurebloburl}
                         <img 
                           src={photoPreview} 
                           alt="Profile Photo" 
