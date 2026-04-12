@@ -350,7 +350,7 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const response = await fetch(buildApiUrl('/api/user'))
+      const response = await fetch('/api/user')
       if (response.ok) {
         const data: Seller[] = await response.json()
         setApiUsers(data)
@@ -366,7 +366,7 @@ export default function AdminUsersPage() {
 
   const fetchSellersCount = async () => {
     try {
-      const response = await fetch(buildApiUrl('/api/user'))
+      const response = await fetch('/api/user')
       if (response.ok) {
         const data: Seller[] = await response.json()
         setSellersCount(data.filter((user) => user.role === 'seller').length)
