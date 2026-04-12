@@ -405,6 +405,12 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
   const handleSave = async () => {
     if (!user) return
+    const validationError = validateProfileForSave(user)
+    if (validationError) {
+      toast.error(validationError)
+      setError(validationError)
+      return
+    }
 
     setSaving(true)
     setError(null)
@@ -444,6 +450,12 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
   const handleSaveAndExit = async () => {
     if (!user) return
+    const validationError = validateProfileForSave(user)
+    if (validationError) {
+      toast.error(validationError)
+      setError(validationError)
+      return
+    }
 
     setSaving(true)
     setError(null)
@@ -483,6 +495,16 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
   }
 
   const getCurrentTabIndex = () => tabs.findIndex(tab => tab.id === activeTab)
+
+  const validateProfileForSave = (userData: User): string | null => {
+    if (!userData.firstname?.trim()) return 'First name is required'
+    if (!userData.lastname?.trim()) return 'Last name is required'
+    if (!userData.mobile?.trim()) return 'Mobile number is required'
+    if (!userData.address?.trim()) return 'Residential address is required'
+    if (!userData.dateofbirth) return 'Date of birth is required'
+    if (!userData.residencystatus) return 'Residency status is required'
+    return null
+  }
   
   const prepareUserForSave = (userData: User) => {
     return {
