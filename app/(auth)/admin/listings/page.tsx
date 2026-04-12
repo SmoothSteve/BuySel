@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Home, Eye, Pause, Trash2, Star, AlertCircle, CheckCircle, Clock, Search, Filter, MoreVertical, Loader2, Edit, User, Calendar, FileCheck, Building2, MapPin, Bed, Bath, Car, Ruler, DollarSign, ListChecks, XCircle, ShieldCheck, Activity } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { getAzureBlobUrl } from '@/lib/config'
+import { buildApiUrl, getAzureBlobUrl } from '@/lib/config'
 import { Property } from '@/types/property'
 import AddPropertyDialog from '@/components/AddPropertyDialog'
 import AuditProperty from '@/components/AuditProperty'
@@ -172,7 +172,7 @@ export default function AdminListingsPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('https://buysel.azurewebsites.net/api/user')
+      const response = await fetch(buildApiUrl('/api/user'))
       if (response.ok) {
         const data: User[] = await response.json()
         setUsers(data)
