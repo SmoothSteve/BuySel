@@ -405,7 +405,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
   const handleSave = async () => {
     if (!user) return
-    const validationError = validateProfileForSave(user, activeTab === 'personal')
+    const validationError = validateProfileForSave(user)
     if (validationError) {
       toast.error(validationError)
       setError(validationError)
@@ -434,11 +434,10 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
         invalidateUserDataCache() // Invalidate cache for all components
         toast.success('Profile saved successfully!')
       } else {
-        const errorPayload = await response.json().catch(() => null)
-        const details = errorPayload?.details || errorPayload?.error || 'Failed to save profile'
-        console.error('Failed to save profile:', response.status, details)
-        toast.error(details)
-        setError(details)
+        const errorText = await response.text()
+        console.error('Failed to save profile:', response.status, errorText)
+        toast.error('Failed to save profile')
+        setError('Failed to save profile')
       }
     } catch (error) {
       console.error('Error saving user:', error)
@@ -451,7 +450,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
   const handleSaveAndExit = async () => {
     if (!user) return
-    const validationError = validateProfileForSave(user, activeTab === 'personal')
+    const validationError = validateProfileForSave(user)
     if (validationError) {
       toast.error(validationError)
       setError(validationError)
@@ -481,11 +480,10 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
         toast.success('Profile saved successfully!')
         onClose() // Close the dialog after successful save
       } else {
-        const errorPayload = await response.json().catch(() => null)
-        const details = errorPayload?.details || errorPayload?.error || 'Failed to save profile'
-        console.error('Failed to save profile:', response.status, details)
-        toast.error(details)
-        setError(details)
+        const errorText = await response.text()
+        console.error('Failed to save profile:', response.status, errorText)
+        toast.error('Failed to save profile')
+        setError('Failed to save profile')
       }
     } catch (error) {
       console.error('Error saving user:', error)
@@ -498,8 +496,7 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
 
   const getCurrentTabIndex = () => tabs.findIndex(tab => tab.id === activeTab)
 
-  const validateProfileForSave = (userData: User, validatePersonalSection: boolean): string | null => {
-    if (!validatePersonalSection) return null
+  const validateProfileForSave = (userData: User): string | null => {
     if (!userData.firstname?.trim()) return 'First name is required'
     if (!userData.lastname?.trim()) return 'Last name is required'
     if (!userData.mobile?.trim()) return 'Mobile number is required'
