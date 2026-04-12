@@ -4,8 +4,6 @@ This repository now supports a 3-stage profile migration:
 
 1. **Stage 1: App profile routes moved to Supabase**
    - `GET /api/user/email/[email]`
-   - `GET /api/user/[id]`
-   - `GET /api/user` (list/backfill support)
    - `POST /api/user`
    - `PUT /api/user`
 2. **Stage 2: Data migration + optional dual-write**
@@ -70,3 +68,4 @@ When enabled, profile POST/PUT writes to Supabase first and mirrors to Azure.
 - Keep dual-write on for a validation window.
 - Verify profile create/update/read + upload paths.
 - Disable `PROFILE_DUAL_WRITE_AZURE` once confidence is high.
+
