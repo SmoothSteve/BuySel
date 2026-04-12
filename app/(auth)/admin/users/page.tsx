@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/auth-context'
 import AdminHeader from '@/components/AdminHeader'
 import Footer from '@/components/Footer'
-import { getAzureBlobUrl } from '@/lib/config'
+import { buildApiUrl, getAzureBlobUrl } from '@/lib/config'
 import type { Seller } from '@/types/seller'
 import UserDetailsModal from '@/components/UserDetailsModal'
 import { usePageView } from '@/hooks/useAudit'
@@ -350,7 +350,7 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/user')
+      const response = await fetch(buildApiUrl('/api/user'))
       if (response.ok) {
         const data: Seller[] = await response.json()
         setApiUsers(data)
@@ -366,7 +366,7 @@ export default function AdminUsersPage() {
 
   const fetchSellersCount = async () => {
     try {
-      const response = await fetch('/api/user')
+      const response = await fetch(buildApiUrl('/api/user'))
       if (response.ok) {
         const data: Seller[] = await response.json()
         setSellersCount(data.filter((user) => user.role === 'seller').length)
