@@ -43,7 +43,6 @@ async function loadUsers() {
 
 function mapUser(u) {
   return {
-    id: u.id,
     email: u.email,
     firstname: u.firstname ?? null,
     lastname: u.lastname ?? null,
@@ -78,14 +77,20 @@ async function main() {
 
   console.log(`Loaded ${users.length} users from ${source}`)
 
+  const mappedUsers = users.map(mapUser).filter((u) => Boolean(u.email))
+
+  if (mappedUsers.length !== users.length) {
+    console.warn(`Skipped ${users.length - mappedUsers.length} users without email`)
+  }
+
   const chunkSize = 200
-  for (let i = 0; i < users.length; i += chunkSize) {
-    const chunk = users.slice(i, i + chunkSize).map(mapUser)
+  for (let i = 0; i < mappedUsers.length; i += chunkSize) {
+    const chunk = mappedUsers.slice(i, i + chunkSize)
     const { error } = await supabase.from(table).upsert(chunk, { onConflict: 'email' })
     if (error) {
       throw new Error(`Upsert failed for chunk starting at ${i}: ${error.message}`)
     }
-    console.log(`Upserted ${Math.min(i + chunk.length, users.length)}/${users.length}`)
+    console.log(`Upserted ${Math.min(i + chunk.length, mappedUsers.length)}/${mappedUsers.length}`)
   }
 
   console.log('Migration complete')
