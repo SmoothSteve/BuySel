@@ -7,19 +7,10 @@ export async function GET() {
       cache: 'no-store',
     })
 
-    if (!response.ok) {
-      return NextResponse.json([], { status: 200 })
-    }
-
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) {
-      return NextResponse.json([], { status: 200 })
-    }
-
     const data = await response.json()
-    return NextResponse.json(Array.isArray(data) ? data : [], { status: 200 })
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error('[api/property/all][GET] error:', error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 })
   }
 }
