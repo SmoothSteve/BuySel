@@ -187,7 +187,7 @@ export default function AdminListingsPage() {
   const fetchProperties = async () => {
     try {
       setLoading(true)
-      const response = await fetch('https://buysel.azurewebsites.net/api/property/all')
+      const response = await fetch('/api/property/all')
       if (response.ok) {
         const data: Property[] = await response.json()
         setProperties(data)
