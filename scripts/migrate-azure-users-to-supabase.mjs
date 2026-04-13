@@ -88,6 +88,12 @@ async function main() {
     console.log(`Upserted ${Math.min(i + chunk.length, users.length)}/${users.length}`)
   }
 
+  const { data: sequenceMaxId, error: sequenceError } = await supabase.rpc('sync_user_profiles_id_sequence')
+  if (sequenceError) {
+    throw new Error(`Failed to sync user_profiles id sequence: ${sequenceError.message}`)
+  }
+  console.log(`Synced user_profiles id sequence to max id ${sequenceMaxId ?? 0}`)
+
   console.log('Migration complete')
 }
 

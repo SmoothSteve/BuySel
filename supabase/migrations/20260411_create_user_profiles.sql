@@ -45,3 +45,18 @@ for each row
 execute function public.set_updated_at_user_profiles();
 
 create index if not exists idx_user_profiles_email on public.user_profiles(email);
+
+create or replace function public.sync_user_profiles_id_sequence()
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  max_id bigint;
+begin
+  select coalesce(max(id), 0) into max_id from public.user_profiles;
+  perform setval(pg_get_serial_sequence('public.user_profiles', 'id'), max_id, true);
+  return max_id;
+end;
+$$;
