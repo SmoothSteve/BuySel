@@ -27,7 +27,7 @@ export default function CompleteProfilePage() {
 
   const checkExistingProfile = async () => {
     try {
-      const response = await fetch(`https://buysel.azurewebsites.net/api/user/email/${encodeURIComponent(user?.email || '')}`)
+      const response = await fetch(`/api/user/email/${encodeURIComponent(user?.email || '')}`)
       if (response.ok) {
         const userData = await response.json()
         if (userData && userData.id) {
