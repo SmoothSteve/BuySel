@@ -27,6 +27,12 @@ export const config = {
 
 export function buildApiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  // In the browser, keep `/api/*` calls same-origin to avoid CORS issues
+  if (typeof window !== 'undefined' && normalizedPath.startsWith('/api')) {
+    return normalizedPath
+  }
+
   return `${config.api.baseUrl}${normalizedPath}`
 }
 

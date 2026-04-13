@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth/auth-context'
-import { buildApiUrl } from '@/lib/config'
 //import { useRouter } from 'next/navigation'
 
 interface UserData {
@@ -110,7 +109,7 @@ export function useUserData(): UseUserDataReturn {
       setError(null)
 
       console.log('Fetching user data for:', user.email)
-      const response = await fetch(buildApiUrl(`/api/user/email/${encodeURIComponent(user.email)}`))
+      const response = await fetch(`/api/user/email/${encodeURIComponent(user.email)}`)
       
       if (!response.ok) {
         if (response.status === 404) {

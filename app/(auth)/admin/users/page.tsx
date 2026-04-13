@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/auth-context'
 import AdminHeader from '@/components/AdminHeader'
 import Footer from '@/components/Footer'
-import { getAzureBlobUrl } from '@/lib/config'
+import { getPublicFileUrl } from '@/lib/config'
 import type { Seller } from '@/types/seller'
 import UserDetailsModal from '@/components/UserDetailsModal'
 import { usePageView } from '@/hooks/useAudit'
@@ -312,6 +312,34 @@ export default function AdminUsersPage() {
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
+  const normalizeSeller = (raw: Partial<Seller>): Seller => ({
+    id: Number(raw.id || 0),
+    email: typeof raw.email === 'string' ? raw.email : '',
+    role: raw.role || 'user',
+    firstname: typeof raw.firstname === 'string' ? raw.firstname : '',
+    lastname: typeof raw.lastname === 'string' ? raw.lastname : '',
+    mobile: typeof raw.mobile === 'string' ? raw.mobile : '',
+    address: typeof raw.address === 'string' ? raw.address : '',
+    idbloburl: typeof raw.idbloburl === 'string' ? raw.idbloburl : '',
+    idverified: raw.idverified || null,
+    dte: typeof raw.dte === 'string' ? raw.dte : '',
+    termsconditions: Boolean(raw.termsconditions),
+    privacypolicy: Boolean(raw.privacypolicy),
+    middlename: typeof raw.middlename === 'string' ? raw.middlename : '',
+    dateofbirth: raw.dateofbirth || null,
+    residencystatus: typeof raw.residencystatus === 'string' ? raw.residencystatus : '',
+    maritalstatus: typeof raw.maritalstatus === 'string' ? raw.maritalstatus : '',
+    powerofattorney: typeof raw.powerofattorney === 'string' ? raw.powerofattorney : '',
+    idtype: typeof raw.idtype === 'string' ? raw.idtype : 'none',
+    ratesnotice: raw.ratesnotice || null,
+    ratesnoticeverified: raw.ratesnoticeverified || null,
+    titlesearch: raw.titlesearch || null,
+    titlesearchverified: raw.titlesearchverified || null,
+    admin: Boolean(raw.admin),
+    photoazurebloburl: raw.photoazurebloburl || null,
+    photoverified: Boolean(raw.photoverified),
+  })
+
   // Check authentication
   useEffect(() => {
     if (authLoading) return
@@ -350,9 +378,10 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const response = await fetch('https://buysel.azurewebsites.net/api/user')
+      const response = await fetch('/api/user')
       if (response.ok) {
-        const data: Seller[] = await response.json()
+        const rawData = await response.json()
+        const data: Seller[] = Array.isArray(rawData) ? rawData.map(normalizeSeller) : []
         setApiUsers(data)
       } else {
         console.error('Failed to fetch users')
@@ -366,10 +395,11 @@ export default function AdminUsersPage() {
 
   const fetchSellersCount = async () => {
     try {
-      const response = await fetch('https://buysel.azurewebsites.net/api/user/sellers')
+      const response = await fetch('/api/user')
       if (response.ok) {
-        const data: Seller[] = await response.json()
-        setSellersCount(data.length)
+        const rawData = await response.json()
+        const data: Seller[] = Array.isArray(rawData) ? rawData.map(normalizeSeller) : []
+        setSellersCount(data.filter((user) => user.role === 'seller').length)
       } else {
         console.error('Failed to fetch sellers count')
       }
@@ -604,7 +634,7 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">
                         {user.photoazurebloburl && user.photoazurebloburl.trim() !== '' ? (
                           <img
-                            src={getAzureBlobUrl(user.photoazurebloburl)}
+                            src={getPublicFileUrl(user.photoazurebloburl)}
                             alt={`${user.firstname} ${user.lastname}`}
                             className="w-12 h-12 object-cover rounded-full"
                           />
@@ -728,7 +758,7 @@ export default function AdminUsersPage() {
                     <div className="flex items-start gap-4 mb-4 pb-4 border-b border-gray-200">
                       {user.photoazurebloburl && user.photoazurebloburl.trim() !== '' ? (
                         <img
-                          src={getAzureBlobUrl(user.photoazurebloburl)}
+                          src={getPublicFileUrl(user.photoazurebloburl)}
                           alt={`${user.firstname} ${user.lastname}`}
                           className="w-16 h-16 object-cover rounded-full flex-shrink-0"
                         />

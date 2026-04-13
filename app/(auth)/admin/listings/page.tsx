@@ -172,7 +172,7 @@ export default function AdminListingsPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('https://buysel.azurewebsites.net/api/user')
+      const response = await fetch('/api/user')
       if (response.ok) {
         const data: User[] = await response.json()
         setUsers(data)
@@ -187,7 +187,7 @@ export default function AdminListingsPage() {
   const fetchProperties = async () => {
     try {
       setLoading(true)
-      const response = await fetch('https://buysel.azurewebsites.net/api/property/all')
+      const response = await fetch('/api/property/all')
       if (response.ok) {
         const data: Property[] = await response.json()
         setProperties(data)

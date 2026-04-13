@@ -56,7 +56,7 @@ export default function AdminAuditLogPage() {
   const fetchAuditLogs = async () => {
     try {
       setLoading(true)
-      const response = await fetch('https://buysel.azurewebsites.net/api/audit')
+      const response = await fetch('/api/audit')
       if (response.ok) {
         const data: ApiAuditLog[] = await response.json()
         setLogs(data)
