@@ -1,11 +1,12 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server'
-import { FACEBOOK_CONFIG, getRedirectUri } from '@/lib/auth/oauth-config'
+import { FACEBOOK_CONFIG, getRedirectUri, sanitizeCallbackUrl } from '@/lib/auth/oauth-config'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get('callbackUrl'))
+  const state = crypto.randomUUID()
 
   // Store the callback URL in a cookie to use after OAuth redirect
   const response = NextResponse.redirect(
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
       redirect_uri: getRedirectUri('facebook'),
       scope: FACEBOOK_CONFIG.scope,
       response_type: 'code',
+      state,
     })}`
   )
 
@@ -22,6 +24,13 @@ export async function GET(request: NextRequest) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 600, // 10 minutes
+    path: '/',
+  })
+  response.cookies.set('oauth_state_facebook', state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 600,
     path: '/',
   })
 
