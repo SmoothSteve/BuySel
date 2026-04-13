@@ -1,6 +1,7 @@
 export interface Seller {
   id: number
   email: string
+  role?: 'buyer' | 'seller' | 'conveyancer' | 'admin' | 'user'
   firstname: string
   lastname: string
   mobile: string
