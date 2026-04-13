@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth/session'
 import { supabase } from '@/lib/supabase'
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024
@@ -6,6 +7,11 @@ const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'im
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession()
+    if (!session?.isLoggedIn || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const email = (formData.get('email') as string | null)?.trim()
@@ -13,6 +19,12 @@ export async function POST(request: NextRequest) {
 
     if (!file || !email || !docType) {
       return NextResponse.json({ error: 'file, email and docType are required' }, { status: 400 })
+    }
+
+    const isAdmin = session.user.role === 'admin'
+    const ownsProfile = email.toLowerCase() === session.user.email.toLowerCase()
+    if (!isAdmin && !ownsProfile) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     if (file.size > MAX_SIZE_BYTES) {
