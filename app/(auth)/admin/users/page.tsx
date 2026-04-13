@@ -312,6 +312,34 @@ export default function AdminUsersPage() {
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
+  const normalizeSeller = (raw: Partial<Seller>): Seller => ({
+    id: Number(raw.id || 0),
+    email: typeof raw.email === 'string' ? raw.email : '',
+    role: raw.role || 'user',
+    firstname: typeof raw.firstname === 'string' ? raw.firstname : '',
+    lastname: typeof raw.lastname === 'string' ? raw.lastname : '',
+    mobile: typeof raw.mobile === 'string' ? raw.mobile : '',
+    address: typeof raw.address === 'string' ? raw.address : '',
+    idbloburl: typeof raw.idbloburl === 'string' ? raw.idbloburl : '',
+    idverified: raw.idverified || null,
+    dte: typeof raw.dte === 'string' ? raw.dte : '',
+    termsconditions: Boolean(raw.termsconditions),
+    privacypolicy: Boolean(raw.privacypolicy),
+    middlename: typeof raw.middlename === 'string' ? raw.middlename : '',
+    dateofbirth: raw.dateofbirth || null,
+    residencystatus: typeof raw.residencystatus === 'string' ? raw.residencystatus : '',
+    maritalstatus: typeof raw.maritalstatus === 'string' ? raw.maritalstatus : '',
+    powerofattorney: typeof raw.powerofattorney === 'string' ? raw.powerofattorney : '',
+    idtype: typeof raw.idtype === 'string' ? raw.idtype : 'none',
+    ratesnotice: raw.ratesnotice || null,
+    ratesnoticeverified: raw.ratesnoticeverified || null,
+    titlesearch: raw.titlesearch || null,
+    titlesearchverified: raw.titlesearchverified || null,
+    admin: Boolean(raw.admin),
+    photoazurebloburl: raw.photoazurebloburl || null,
+    photoverified: Boolean(raw.photoverified),
+  })
+
   // Check authentication
   useEffect(() => {
     if (authLoading) return
@@ -352,7 +380,8 @@ export default function AdminUsersPage() {
       setLoading(true)
       const response = await fetch('/api/user')
       if (response.ok) {
-        const data: Seller[] = await response.json()
+        const rawData = await response.json()
+        const data: Seller[] = Array.isArray(rawData) ? rawData.map(normalizeSeller) : []
         setApiUsers(data)
       } else {
         console.error('Failed to fetch users')
