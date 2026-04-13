@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Get user's numeric ID from email
-    const userEmailUrl = backendUrl(`/api/user/email/${encodeURIComponent(session.user.email!)}`)
+    const userEmailUrl = new URL(`/api/user/email/${encodeURIComponent(session.user.email!)}`, req.nextUrl.origin).toString()
     const userResponse = await fetch(userEmailUrl)
     
     if (!userResponse.ok) {
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
           
           // Get other user's name
           const otherUserId = conv.buyer_id === userId ? conv.seller_id : conv.buyer_id
-          const otherUserResponse = await fetch(backendUrl(`/api/user/${otherUserId}`))
+          const otherUserResponse = await fetch(new URL(`/api/user/${otherUserId}`, req.nextUrl.origin).toString())
           const otherUser = otherUserResponse.ok 
             ? await otherUserResponse.json() 
             : { firstname: 'User', lastname: '' }
