@@ -1,5 +1,15 @@
 import { supabase } from '@/lib/supabase'
 
+export class DualWriteError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'DualWriteError'
+    this.status = status
+  }
+}
+
 export type UserProfile = {
   id?: number
   email: string
@@ -108,6 +118,6 @@ export async function maybeDualWriteToAzure(profile: Partial<UserProfile>, metho
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(`Dual-write to Azure failed (${response.status}): ${errorText}`)
+    throw new DualWriteError(response.status, `Dual-write to Azure failed (${response.status}): ${errorText}`)
   }
 }
