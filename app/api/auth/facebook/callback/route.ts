@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server'
 import { FACEBOOK_CONFIG, getRedirectUri } from '@/lib/auth/oauth-config'
 import { getSession } from '@/lib/auth/session'
+import { backendUrl } from '@/lib/server-config'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
     const userInfo = await userResponse.json()
 
     // Create or update user in database via C# backend
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/oauth`, {
+    const backendResponse = await fetch(backendUrl('/api/users/oauth'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
