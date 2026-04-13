@@ -5,6 +5,25 @@ import { getSession } from '@/lib/auth/session'
 
 const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
 
+type HttpLikeError = Error & { status?: number; statusCode?: number }
+
+function getErrorStatus(error: unknown, fallback = 500): number {
+  const candidate = error as HttpLikeError
+  if (typeof candidate?.status === 'number') return candidate.status
+  if (typeof candidate?.statusCode === 'number') return candidate.statusCode
+
+  if (candidate?.message?.includes('email is required')) {
+    return 400
+  }
+
+  const azureStatus = candidate?.message?.match(/Dual-write to Azure failed \((\d{3})\):/)
+  if (azureStatus) {
+    return Number(azureStatus[1])
+  }
+
+  return fallback
+}
+
 export async function GET() {
   try {
     const session = await getSession()
@@ -31,7 +50,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function writeProfile(request: NextRequest, method: 'POST' | 'PUT') {
   try {
     const session = await getSession()
     if (!session?.user?.email) {
@@ -42,31 +61,24 @@ export async function POST(request: NextRequest) {
     if (session.user.role !== 'admin' && body.email !== session.user.email) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
     const saved = await upsertProfile(body)
-    await maybeDualWriteToAzure(body, 'POST')
+    await maybeDualWriteToAzure(body, method)
     return NextResponse.json(saved)
   } catch (error) {
-    console.error('[api/user][POST] error:', error)
-    return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
+    const status = getErrorStatus(error)
+    const fallbackMessage = method === 'POST' ? 'Failed to create user profile' : 'Failed to update user profile'
+    const message = error instanceof Error ? error.message : fallbackMessage
+
+    console.error(`[api/user][${method}] error:`, error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
-export async function PUT(request: NextRequest) {
-  try {
-    const session = await getSession()
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export async function POST(request: NextRequest) {
+  return writeProfile(request, 'POST')
+}
 
-    const body = await request.json()
-    if (session.user.role !== 'admin' && body.email !== session.user.email) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-    const saved = await upsertProfile(body)
-    await maybeDualWriteToAzure(body, 'PUT')
-    return NextResponse.json(saved)
-  } catch (error) {
-    console.error('[api/user][PUT] error:', error)
-    return NextResponse.json({ error: 'Failed to update user profile' }, { status: 500 })
-  }
+export async function PUT(request: NextRequest) {
+  return writeProfile(request, 'PUT')
 }

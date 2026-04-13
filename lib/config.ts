@@ -25,11 +25,30 @@ export const config = {
   }
 }
 
+const SAME_ORIGIN_PROXY_PREFIXES = [
+  '/api/audit',
+  '/api/auth',
+  '/api/chat',
+  '/api/data-deletion',
+  '/api/debug-env',
+  '/api/offer/buyer',
+  '/api/property',
+  '/api/push',
+  '/api/user',
+  '/api/userpropertyfav',
+]
+
+function shouldUseSameOriginApi(path: string): boolean {
+  return SAME_ORIGIN_PROXY_PREFIXES.some(
+    prefix => path === prefix || path.startsWith(`${prefix}/`),
+  )
+}
+
 export function buildApiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
 
-  // In the browser, keep `/api/*` calls same-origin to avoid CORS issues
-  if (typeof window !== 'undefined' && normalizedPath.startsWith('/api')) {
+  // In the browser, keep only explicitly proxied API routes same-origin.
+  if (typeof window !== 'undefined' && shouldUseSameOriginApi(normalizedPath)) {
     return normalizedPath
   }
 
