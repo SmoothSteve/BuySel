@@ -271,7 +271,10 @@ export async function POST(req: NextRequest) {
       // Send push notification via our API
       const pushResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/push/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          cookie: req.headers.get('cookie') || '',
+        },
         body: JSON.stringify({
           userId: recipientId,
           payload: {

@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getSession } from '@/lib/auth/session'
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024
 const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic'])
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const email = (formData.get('email') as string | null)?.trim()
@@ -13,6 +19,10 @@ export async function POST(request: NextRequest) {
 
     if (!file || !email || !docType) {
       return NextResponse.json({ error: 'file, email and docType are required' }, { status: 400 })
+    }
+
+    if (session.user.role !== 'admin' && email !== session.user.email) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     if (file.size > MAX_SIZE_BYTES) {
@@ -25,8 +35,9 @@ export async function POST(request: NextRequest) {
 
     const bucket = process.env.SUPABASE_PROFILE_BUCKET || 'profile-documents'
     const safeEmail = email.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const safeDocType = docType.replace(/[^a-zA-Z0-9_-]/g, '_')
     const ext = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')) : ''
-    const path = `${safeEmail}/${docType}-${Date.now()}${ext}`
+    const path = `${safeEmail}/${safeDocType}-${Date.now()}${ext}`
 
     const fileBuffer = await file.arrayBuffer()
     const { error: uploadError } = await supabase.storage
