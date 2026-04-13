@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises'
 import process from 'node:process'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { createClient } from '@supabase/supabase-js'
 
 const args = Object.fromEntries(
@@ -21,6 +23,37 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+const execFileAsync = promisify(execFile)
+
+function getSequenceResetSql(tableName, maxId) {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+    throw new Error(`Invalid table name for sequence reset: ${tableName}`)
+  }
+
+  const escapedTable = `public.${tableName}`
+  return `SELECT setval(pg_get_serial_sequence('${escapedTable}', 'id'), ${maxId}, true);`
+}
+
+async function resetProfileIdSequence(maxId) {
+  if (!Number.isInteger(maxId) || maxId < 1) {
+    console.log('Skipping sequence reset: no positive id values found')
+    return
+  }
+
+  const sql = getSequenceResetSql(table, maxId)
+  const dbUrl = process.env.SUPABASE_DB_URL
+
+  if (!dbUrl) {
+    console.warn('Skipping sequence reset: SUPABASE_DB_URL is not set. Run this SQL manually:')
+    console.warn(sql)
+    return
+  }
+
+  await execFileAsync('psql', [dbUrl, '-v', 'ON_ERROR_STOP=1', '-c', sql])
+  console.log(`Reset ${table}.id sequence to ${maxId}`)
+}
+
 
 async function loadUsers() {
   if (source === 'file') {
@@ -87,6 +120,13 @@ async function main() {
     }
     console.log(`Upserted ${Math.min(i + chunk.length, users.length)}/${users.length}`)
   }
+
+  const maxImportedId = users.reduce((maxId, user) => {
+    const numericId = Number.parseInt(String(user.id), 10)
+    return Number.isNaN(numericId) ? maxId : Math.max(maxId, numericId)
+  }, 0)
+
+  await resetProfileIdSequence(maxImportedId)
 
   console.log('Migration complete')
 }
