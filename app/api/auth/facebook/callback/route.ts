@@ -3,13 +3,16 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server'
 import { FACEBOOK_CONFIG, getRedirectUri } from '@/lib/auth/oauth-config'
 import { getSession } from '@/lib/auth/session'
+import { backendUrl } from '@/lib/server-config'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const state = searchParams.get('state')
+  const expectedState = request.cookies.get('oauth_state_facebook')?.value
 
-  if (error || !code) {
+  if (error || !code || !state || state !== expectedState) {
     console.error('Facebook OAuth error:', error)
     return NextResponse.redirect(new URL('/?error=facebook_auth_failed', request.url))
   }
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
     const userInfo = await userResponse.json()
 
     // Create or update user in database via C# backend
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/oauth`, {
+    const backendResponse = await fetch(backendUrl('/api/users/oauth'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -81,6 +84,7 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.redirect(new URL(callbackUrl, request.url))
     response.cookies.delete('oauth_callback_url')
+    response.cookies.delete('oauth_state_facebook')
 
     return response
   } catch (error) {

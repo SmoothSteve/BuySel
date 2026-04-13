@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { backendUrl } from '@/lib/server-config';
+import { getSession } from '@/lib/auth/session';
 
 console.log('VAPID_EMAIL:', process.env.VAPID_EMAIL || 'MISSING');
 console.log('NEXT_PUBLIC_VAPID_PUBLIC_KEY:', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? 'YES (length ' + process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY.length + ')' : 'MISSING');
@@ -28,6 +29,11 @@ interface WebPushError extends Error {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // VAPID setup — ONLY runs at request time (runtime), not build time
     webpush.setVapidDetails(
       process.env.VAPID_EMAIL || 'mailto:admin@buysel.com.au',

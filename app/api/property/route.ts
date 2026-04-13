@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getSession } from '@/lib/auth/session'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -21,6 +22,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     const {
@@ -33,6 +39,10 @@ export async function POST(request: Request) {
       lon,
       seller_email
     } = body
+
+    if (session.user.role !== 'admin' && seller_email !== session.user.email) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const { data, error } = await supabase
       .from('properties')

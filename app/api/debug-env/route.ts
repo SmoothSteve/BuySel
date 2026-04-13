@@ -3,12 +3,11 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
-  const isProduction = process.env.NODE_ENV === 'production'
   const configuredToken = process.env.DEBUG_ENV_TOKEN
   const requestToken = req.headers.get('x-debug-token')
 
-  if (isProduction && (!configuredToken || requestToken !== configuredToken)) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!configuredToken || requestToken !== configuredToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Only show in development or with proper auth

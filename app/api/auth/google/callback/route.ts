@@ -9,13 +9,15 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const state = searchParams.get('state')
+  const expectedState = request.cookies.get('oauth_state_google')?.value
 
   // Get the actual host from headers
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host
   const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
   const origin = `${protocol}://${host}`
 
-  if (error || !code) {
+  if (error || !code || !state || state !== expectedState) {
     console.error('Google OAuth error:', error)
     return NextResponse.redirect(new URL('/?error=google_auth_failed', origin))
   }
@@ -109,6 +111,7 @@ if (fetchError || !existingUser) {
 
     const response = NextResponse.redirect(redirectUrl)
     response.cookies.delete('oauth_callback_url')
+    response.cookies.delete('oauth_state_google')
 
     return response
   } catch (error) {
