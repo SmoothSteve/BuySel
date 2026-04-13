@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/auth-context'
 import AdminHeader from '@/components/AdminHeader'
 import Footer from '@/components/Footer'
-import { getPublicFileUrl } from '@/lib/config'
+import { buildApiUrl, getAzureBlobUrl } from '@/lib/config'
 import type { Seller } from '@/types/seller'
 import UserDetailsModal from '@/components/UserDetailsModal'
 import { usePageView } from '@/hooks/useAudit'
@@ -397,8 +397,7 @@ export default function AdminUsersPage() {
     try {
       const response = await fetch('/api/user')
       if (response.ok) {
-        const rawData = await response.json()
-        const data: Seller[] = Array.isArray(rawData) ? rawData.map(normalizeSeller) : []
+        const data: Seller[] = await response.json()
         setSellersCount(data.filter((user) => user.role === 'seller').length)
       } else {
         console.error('Failed to fetch sellers count')
