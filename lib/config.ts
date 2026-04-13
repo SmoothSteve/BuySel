@@ -27,6 +27,12 @@ export const config = {
 
 export function buildApiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  // In the browser, keep `/api/*` calls same-origin to avoid CORS issues
+  if (typeof window !== 'undefined' && normalizedPath.startsWith('/api')) {
+    return normalizedPath
+  }
+
   return `${config.api.baseUrl}${normalizedPath}`
 }
 
@@ -55,3 +61,9 @@ export function getPublicFileUrl(filename: string): string {
 
 // Backwards-compatible alias to reduce migration churn
 export const getAzureBlobUrl = getPublicFileUrl
+
+
+// Temporary compatibility shim for stale chunks that reference a global helper
+if (typeof globalThis !== 'undefined') {
+  ;(globalThis as { getPublicFileUrl?: typeof getPublicFileUrl }).getPublicFileUrl = getPublicFileUrl
+}

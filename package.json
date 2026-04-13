@@ -6,7 +6,6 @@
     "dev": "next dev",
     "prebuild": "node scripts/update-sw-version.js",
     "build": "next build",
-    "postbuild": "node scripts/restore-sw-version.js",
     "start": "next start",
     "lint": "eslint"
   },
