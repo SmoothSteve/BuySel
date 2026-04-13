@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Home, Eye, Pause, Trash2, Star, AlertCircle, CheckCircle, Clock, Search, Filter, MoreVertical, Loader2, Edit, User, Calendar, FileCheck, Building2, MapPin, Bed, Bath, Car, Ruler, DollarSign, ListChecks, XCircle, ShieldCheck, Activity } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { getAzureBlobUrl } from '@/lib/config'
+import { buildApiUrl, getAzureBlobUrl } from '@/lib/config'
 import { Property } from '@/types/property'
 import AddPropertyDialog from '@/components/AddPropertyDialog'
 import AuditProperty from '@/components/AuditProperty'
