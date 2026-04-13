@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // First, get user's email from userId
     const userResponse = await fetch(
-      backendUrl(`/api/user/${userId}`),
+      new URL(`/api/user/${userId}`, request.nextUrl.origin).toString(),
       {
         method: 'GET',
         headers: {
