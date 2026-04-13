@@ -61,3 +61,9 @@ export function getPublicFileUrl(filename: string): string {
 
 // Backwards-compatible alias to reduce migration churn
 export const getAzureBlobUrl = getPublicFileUrl
+
+
+// Temporary compatibility shim for stale chunks that reference a global helper
+if (typeof globalThis !== 'undefined') {
+  ;(globalThis as { getPublicFileUrl?: typeof getPublicFileUrl }).getPublicFileUrl = getPublicFileUrl
+}
