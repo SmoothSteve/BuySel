@@ -3,42 +3,32 @@ import { backendUrl } from '@/lib/server-config'
 
 export async function GET() {
   try {
-    const response = await fetch(backendUrl('/api/audit'), { cache: 'no-store' })
-
-    if (!response.ok) {
-      return NextResponse.json([], { status: 200 })
-    }
-
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) {
-      return NextResponse.json([], { status: 200 })
-    }
+    const response = await fetch(backendUrl('/api/audit'), {
+      cache: 'no-store',
+    })
 
     const data = await response.json()
-    return NextResponse.json(Array.isArray(data) ? data : [], { status: 200 })
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error('[api/audit][GET] error:', error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json({ error: 'Failed to fetch audit logs' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.text()
+    const body = await request.json()
     const response = await fetch(backendUrl('/api/audit'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body,
+      body: JSON.stringify(body),
       cache: 'no-store',
     })
 
-    if (!response.ok) {
-      return NextResponse.json({ success: false }, { status: 200 })
-    }
-
-    return NextResponse.json({ success: true }, { status: 200 })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error('[api/audit][POST] error:', error)
-    return NextResponse.json({ success: false }, { status: 200 })
+    return NextResponse.json({ error: 'Failed to create audit log' }, { status: 500 })
   }
 }

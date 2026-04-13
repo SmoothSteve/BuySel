@@ -1,21 +1,16 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { backendUrl } from '@/lib/server-config'
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const response = await fetch(backendUrl('/api/property/all'), {
+      cache: 'no-store',
+    })
 
-    if (error) {
-      console.error('[api/property/all][GET] supabase error:', error)
-      return NextResponse.json([], { status: 200 })
-    }
-
-    return NextResponse.json(data ?? [], { status: 200 })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error('[api/property/all][GET] error:', error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 })
   }
 }
