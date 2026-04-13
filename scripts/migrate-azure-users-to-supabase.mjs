@@ -43,7 +43,7 @@ async function loadUsers() {
 
 function mapUser(u) {
   return {
-    id: u.id,
+    // Keep generated identity values in Supabase so sequence state stays valid.
     email: u.email,
     firstname: u.firstname ?? null,
     lastname: u.lastname ?? null,
