@@ -33,3 +33,14 @@ export function getRedirectUri(provider: string) {
                   'http://localhost:3000'
   return `${baseUrl}/api/auth/${provider}/callback`
 }
+
+export function sanitizeCallbackUrl(callbackUrl: string | null | undefined): string {
+  if (!callbackUrl) return '/'
+
+  // Only allow same-site relative paths
+  if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//')) {
+    return '/'
+  }
+
+  return callbackUrl
+}

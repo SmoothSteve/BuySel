@@ -32,7 +32,7 @@ export type UserProfile = {
 const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
 
 const pickFields = (profile: Partial<UserProfile>) => ({
-  ...(profile.id && profile.id > 0 ? { id: profile.id } : {}),
+  id: profile.id,
   email: profile.email,
   firstname: profile.firstname ?? null,
   lastname: profile.lastname ?? null,
@@ -70,33 +70,6 @@ export async function getProfileByEmail(email: string): Promise<UserProfile | nu
   }
 
   return data as UserProfile | null
-}
-
-export async function getProfileById(id: number): Promise<UserProfile | null> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (error) {
-    throw new Error(`Failed to fetch profile by id: ${error.message}`)
-  }
-
-  return data as UserProfile | null
-}
-
-export async function listProfiles(): Promise<UserProfile[]> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .order('id', { ascending: true })
-
-  if (error) {
-    throw new Error(`Failed to list profiles: ${error.message}`)
-  }
-
-  return (data || []) as UserProfile[]
 }
 
 export async function upsertProfile(profile: Partial<UserProfile>): Promise<UserProfile> {

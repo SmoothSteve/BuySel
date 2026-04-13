@@ -1,74 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { listProfiles, maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
-import { backendUrl } from '@/lib/server-config'
+import { supabase } from '@/lib/supabase'
+import { maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
+import { getSession } from '@/lib/auth/session'
+
+const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
 
 export async function GET() {
   try {
-    const profiles = await listProfiles()
-    return NextResponse.json(profiles)
-  } catch (error) {
-    console.error('[api/user][GET] supabase error, falling back:', error)
-
-    try {
-      const response = await fetch(backendUrl('/api/user'), { cache: 'no-store' })
-      if (!response.ok) {
-        return NextResponse.json([], { status: 200 })
-      }
-      const data = await response.json()
-      return NextResponse.json(Array.isArray(data) ? data : [], { status: 200 })
-    } catch (fallbackError) {
-      console.error('[api/user][GET] fallback error:', fallbackError)
-      return NextResponse.json([], { status: 200 })
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    if (session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('*')
+      .order('id', { ascending: true })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return NextResponse.json(data || [])
+  } catch (error) {
+    console.error('[api/user][GET] error:', error)
+    return NextResponse.json({ error: 'Failed to list user profiles' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}))
-
   try {
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    if (session.user.role !== 'admin' && body.email !== session.user.email) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const saved = await upsertProfile(body)
     await maybeDualWriteToAzure(body, 'POST')
     return NextResponse.json(saved)
   } catch (error) {
-    console.error('[api/user][POST] supabase error, falling back:', error)
-
-    try {
-      const response = await fetch(backendUrl('/api/user'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await response.json().catch(() => ({}))
-      return NextResponse.json(data, { status: 200 })
-    } catch (fallbackError) {
-      console.error('[api/user][POST] fallback error:', fallbackError)
-      return NextResponse.json({ success: false }, { status: 200 })
-    }
+    console.error('[api/user][POST] error:', error)
+    return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const body = await request.json().catch(() => ({}))
-
   try {
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    if (session.user.role !== 'admin' && body.email !== session.user.email) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const saved = await upsertProfile(body)
     await maybeDualWriteToAzure(body, 'PUT')
     return NextResponse.json(saved)
   } catch (error) {
-    console.error('[api/user][PUT] supabase error, falling back:', error)
-
-    try {
-      const response = await fetch(backendUrl('/api/user'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await response.json().catch(() => ({}))
-      return NextResponse.json(data, { status: 200 })
-    } catch (fallbackError) {
-      console.error('[api/user][PUT] fallback error:', fallbackError)
-      return NextResponse.json({ success: false }, { status: 200 })
-    }
+    console.error('[api/user][PUT] error:', error)
+    return NextResponse.json({ error: 'Failed to update user profile' }, { status: 500 })
   }
 }
