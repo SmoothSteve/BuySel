@@ -21,46 +21,17 @@ interface AuditPayload {
 }
 
 /**
- * Get the user's IP address
- * This uses a free IP lookup service
- */
-async function getIPAddress(): Promise<string> {
-  try {
-    const response = await fetch('https://api.ipify.org?format=json')
-    const data = await response.json()
-    return data.ip || 'unknown'
-  } catch (error) {
-    console.error('Failed to get IP address:', error)
-    return 'unknown'
-  }
-}
-
-/**
  * Hook to track user actions for audit purposes
  * Automatically logs page views and actions to the audit API
  */
 export function useAudit() {
   const { user } = useAuth()
-  const ipAddressRef = useRef<string | null>(null)
-
-  // Fetch IP address once when hook is initialized
-  useEffect(() => {
-    if (!ipAddressRef.current) {
-      getIPAddress().then(ip => {
-        ipAddressRef.current = ip
-      })
-    }
-  }, [])
+  const ipAddressRef = useRef<string>('captured-server-side')
 
   const logAudit = useCallback(async ({ page, action, propertyid }: AuditParams) => {
     try {
       // Get IP address (use cached if available)
-      const ipaddress = ipAddressRef.current || await getIPAddress()
-
-      // Cache IP for future calls
-      if (!ipAddressRef.current) {
-        ipAddressRef.current = ipaddress
-      }
+      const ipaddress = ipAddressRef.current
 
       const payload: AuditPayload = {
         ipaddress,

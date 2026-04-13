@@ -1,11 +1,12 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server'
-import { GOOGLE_CONFIG } from '@/lib/auth/oauth-config'
+import { GOOGLE_CONFIG, sanitizeCallbackUrl } from '@/lib/auth/oauth-config'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get('callbackUrl'))
+  const state = crypto.randomUUID()
 
   // Get the actual host from headers (Azure Container Apps uses x-forwarded-host)
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
       scope: GOOGLE_CONFIG.scope,
       access_type: 'offline',
       prompt: 'consent',
+      state,
     })}`
   )
 
@@ -30,6 +32,13 @@ export async function GET(request: NextRequest) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 600, // 10 minutes
+    path: '/',
+  })
+  response.cookies.set('oauth_state_google', state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 600,
     path: '/',
   })
 
