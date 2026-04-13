@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises'
 import process from 'node:process'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { createClient } from '@supabase/supabase-js'
 
 const args = Object.fromEntries(
@@ -13,7 +15,9 @@ const args = Object.fromEntries(
 const source = args.source || 'api' // api | file
 const filePath = args.file
 const table = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
+const schema = process.env.SUPABASE_PROFILE_SCHEMA || 'public'
 const azureBaseUrl = process.env.AZURE_BACKEND_API_URL || 'https://buysel.azurewebsites.net'
+const execFileAsync = promisify(execFile)
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
@@ -21,6 +25,12 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+function assertSqlIdentifier(value, label) {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
+    throw new Error(`Invalid ${label}: "${value}". Use only letters, numbers, and underscores.`)
+  }
+}
 
 async function loadUsers() {
   if (source === 'file') {
@@ -70,6 +80,28 @@ function mapUser(u) {
   }
 }
 
+async function reseedIdentitySequence() {
+  assertSqlIdentifier(schema, 'schema')
+  assertSqlIdentifier(table, 'table')
+
+  const dbUrl = process.env.SUPABASE_DB_URL
+  if (!dbUrl) {
+    throw new Error(
+      'Missing SUPABASE_DB_URL. This script backfills explicit IDs and must reseed the identity sequence after upserts.'
+    )
+  }
+
+  const sql = `
+    select setval(
+      pg_get_serial_sequence('${schema}.${table}', 'id'),
+      coalesce((select max(id) from ${schema}.${table}), 0),
+      true
+    );
+  `
+
+  await execFileAsync('psql', [dbUrl, '-v', 'ON_ERROR_STOP=1', '-c', sql])
+}
+
 async function main() {
   const users = await loadUsers()
   if (!Array.isArray(users)) {
@@ -87,6 +119,9 @@ async function main() {
     }
     console.log(`Upserted ${Math.min(i + chunk.length, users.length)}/${users.length}`)
   }
+
+  await reseedIdentitySequence()
+  console.log(`Reseeded ${schema}.${table} identity sequence`)
 
   console.log('Migration complete')
 }
