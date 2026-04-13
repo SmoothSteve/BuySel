@@ -1,43 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendUrl } from '@/lib/server-config'
+import { supabase } from '@/lib/supabase'
+import { maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
+import { getSession } from '@/lib/auth/session'
 
-export const runtime = 'nodejs'
+const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
 
 export async function GET() {
   try {
-    const response = await fetch(backendUrl('/api/user'), { cache: 'no-store' })
-    if (!response.ok) {
-      return NextResponse.json([], { status: 200 })
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const data = await response.json().catch(() => [])
-    return NextResponse.json(Array.isArray(data) ? data : [], { status: 200 })
-  } catch {
-    return NextResponse.json([], { status: 200 })
-  }
-}
+    if (session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
-async function forwardWrite(method: 'POST' | 'PUT', request: NextRequest) {
-  const bodyText = await request.text().catch(() => '{}')
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('*')
+      .order('id', { ascending: true })
 
-  try {
-    const response = await fetch(backendUrl('/api/user'), {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: bodyText || '{}',
-      cache: 'no-store',
-    })
+    if (error) {
+      throw new Error(error.message)
+    }
 
-    const data = await response.json().catch(() => ({}))
-    return NextResponse.json(data, { status: 200 })
-  } catch {
-    return NextResponse.json({ success: false }, { status: 200 })
+    return NextResponse.json(data || [])
+  } catch (error) {
+    console.error('[api/user][GET] error:', error)
+    return NextResponse.json({ error: 'Failed to list user profiles' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
-  return forwardWrite('POST', request)
+  try {
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    if (session.user.role !== 'admin' && body.email !== session.user.email) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    const saved = await upsertProfile(body)
+    await maybeDualWriteToAzure(body, 'POST')
+    return NextResponse.json(saved)
+  } catch (error) {
+    console.error('[api/user][POST] error:', error)
+    return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
+  }
 }
 
 export async function PUT(request: NextRequest) {
-  return forwardWrite('PUT', request)
+  try {
+    const session = await getSession()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    if (session.user.role !== 'admin' && body.email !== session.user.email) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    const saved = await upsertProfile(body)
+    await maybeDualWriteToAzure(body, 'PUT')
+    return NextResponse.json(saved)
+  } catch (error) {
+    console.error('[api/user][PUT] error:', error)
+    return NextResponse.json({ error: 'Failed to update user profile' }, { status: 500 })
+  }
 }

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/auth-context'
 import AdminHeader from '@/components/AdminHeader'
 import Footer from '@/components/Footer'
-import { getAzureBlobUrl } from '@/lib/config'
+import { buildApiUrl, getAzureBlobUrl } from '@/lib/config'
 import type { Seller } from '@/types/seller'
 import UserDetailsModal from '@/components/UserDetailsModal'
 import { usePageView } from '@/hooks/useAudit'
@@ -397,8 +397,7 @@ export default function AdminUsersPage() {
     try {
       const response = await fetch('/api/user')
       if (response.ok) {
-        const rawData = await response.json()
-        const data: Seller[] = Array.isArray(rawData) ? rawData.map(normalizeSeller) : []
+        const data: Seller[] = await response.json()
         setSellersCount(data.filter((user) => user.role === 'seller').length)
       } else {
         console.error('Failed to fetch sellers count')
@@ -634,7 +633,7 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">
                         {user.photoazurebloburl && user.photoazurebloburl.trim() !== '' ? (
                           <img
-                            src={getAzureBlobUrl(user.photoazurebloburl)}
+                            src={getPublicFileUrl(user.photoazurebloburl)}
                             alt={`${user.firstname} ${user.lastname}`}
                             className="w-12 h-12 object-cover rounded-full"
                           />
@@ -758,7 +757,7 @@ export default function AdminUsersPage() {
                     <div className="flex items-start gap-4 mb-4 pb-4 border-b border-gray-200">
                       {user.photoazurebloburl && user.photoazurebloburl.trim() !== '' ? (
                         <img
-                          src={getAzureBlobUrl(user.photoazurebloburl)}
+                          src={getPublicFileUrl(user.photoazurebloburl)}
                           alt={`${user.firstname} ${user.lastname}`}
                           className="w-16 h-16 object-cover rounded-full flex-shrink-0"
                         />
