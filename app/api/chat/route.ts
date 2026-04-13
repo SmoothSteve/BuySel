@@ -8,6 +8,10 @@ interface ConversationSummary {
   property_id: number
 }
 
+function localApiUrl(req: NextRequest, path: string) {
+  return new URL(path, req.nextUrl.origin).toString()
+}
+
 export async function GET(req: NextRequest) {
   const session = await getSession()
 
@@ -31,7 +35,7 @@ export async function GET(req: NextRequest) {
     } else {
       // Get all conversations for the user
       // First, we need to get the user's numeric ID from their email
-      const userEmailUrl = backendUrl(`/api/user/email/${encodeURIComponent(session.user.email!)}`)
+      const userEmailUrl = localApiUrl(req, `/api/user/email/${encodeURIComponent(session.user.email!)}`)
       console.log('🔵 Fetching user by email from:', userEmailUrl)
       const userResponse = await fetch(userEmailUrl)
       if (!userResponse.ok) {
@@ -101,7 +105,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Get user's numeric ID from email
-    const userEmailUrl = backendUrl(`/api/user/email/${encodeURIComponent(session.user.email!)}`)
+    const userEmailUrl = localApiUrl(req, `/api/user/email/${encodeURIComponent(session.user.email!)}`)
     console.log('🔵 POST: Fetching user by email from:', userEmailUrl)
     const userResponse = await fetch(userEmailUrl)
     if (!userResponse.ok) {
@@ -245,7 +249,7 @@ export async function POST(req: NextRequest) {
     })
     
     // Get sender info for notification
-    const senderResponse = await fetch(backendUrl(`/api/user/${userId}`))
+    const senderResponse = await fetch(localApiUrl(req, `/api/user/${userId}`))
     const senderData = await senderResponse.json()
 
     // Send Web Push notification to recipient
