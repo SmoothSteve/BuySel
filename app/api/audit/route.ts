@@ -7,7 +7,8 @@ export async function GET() {
       cache: 'no-store',
     })
 
-    const data = await response.json()
+    const contentType = response.headers.get('content-type') || ''
+    const data = contentType.includes('application/json') ? await response.json() : await response.text()
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error('[api/audit][GET] error:', error)

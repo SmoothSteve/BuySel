@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
+import { DualWriteError, maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
 import { getSession } from '@/lib/auth/session'
 
 const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(saved)
   } catch (error) {
     console.error('[api/user][POST] error:', error)
+    if (error instanceof DualWriteError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
   }
 }
@@ -67,6 +70,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(saved)
   } catch (error) {
     console.error('[api/user][PUT] error:', error)
+    if (error instanceof DualWriteError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     return NextResponse.json({ error: 'Failed to update user profile' }, { status: 500 })
   }
 }

@@ -43,7 +43,6 @@ async function loadUsers() {
 
 function mapUser(u) {
   return {
-    id: u.id,
     email: u.email,
     firstname: u.firstname ?? null,
     lastname: u.lastname ?? null,
