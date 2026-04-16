@@ -72,6 +72,33 @@ export async function getProfileByEmail(email: string): Promise<UserProfile | nu
   return data as UserProfile | null
 }
 
+export async function getProfileById(id: number): Promise<UserProfile | null> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to fetch profile by id: ${error.message}`)
+  }
+
+  return data as UserProfile | null
+}
+
+export async function getAllProfiles(): Promise<UserProfile[]> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .order('id', { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch profiles: ${error.message}`)
+  }
+
+  return (data ?? []) as UserProfile[]
+}
+
 export async function upsertProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
   if (!profile.email) {
     throw new Error('email is required to upsert profile')

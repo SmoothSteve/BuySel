@@ -1,52 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendUrl } from '@/lib/server-config'
+import { getAllProfiles, maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
 
 export const runtime = 'nodejs'
-const ROUTE_VERSION = 'user-proxy-v3-2026-04-13'
+const ROUTE_VERSION = 'user-supabase-v1-2026-04-16'
 
-function jsonWithVersion(body: unknown) {
+function withVersionHeaders(headers?: HeadersInit) {
+  const responseHeaders = new Headers(headers)
+  responseHeaders.set('x-buysel-route-version', ROUTE_VERSION)
+  return responseHeaders
+}
+
+function jsonWithVersion(body: unknown, status = 200) {
   return NextResponse.json(body, {
-    status: 200,
-    headers: { 'x-buysel-route-version': ROUTE_VERSION },
+    status,
+    headers: withVersionHeaders(),
   })
 }
 
 export async function GET() {
   try {
-    const response = await fetch(backendUrl('/api/user'), { cache: 'no-store' })
-    if (!response.ok) {
-      return jsonWithVersion([])
-    }
-
-    const data = await response.json().catch(() => [])
-    return jsonWithVersion(Array.isArray(data) ? data : [])
-  } catch {
-    return jsonWithVersion([])
+    const profiles = await getAllProfiles()
+    return jsonWithVersion(profiles)
+  } catch (error) {
+    console.error('[api/user][GET] failed:', error)
+    return jsonWithVersion([], 500)
   }
 }
 
-async function forwardWrite(method: 'POST' | 'PUT', request: NextRequest) {
-  const bodyText = await request.text().catch(() => '{}')
+async function parseProfileRequest(request: NextRequest) {
+  const body = await request.json().catch(() => null)
+
+  if (!body || typeof body !== 'object' || !('email' in body) || typeof body.email !== 'string' || !body.email.trim()) {
+    return { error: jsonWithVersion({ error: 'email is required' }, 400) }
+  }
+
+  return { profile: body as Record<string, unknown> }
+}
+
+async function handleUpsert(method: 'POST' | 'PUT', request: NextRequest) {
+  const parsed = await parseProfileRequest(request)
+  if ('error' in parsed) {
+    return parsed.error
+  }
 
   try {
-    const response = await fetch(backendUrl('/api/user'), {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: bodyText || '{}',
-      cache: 'no-store',
-    })
-
-    const data = await response.json().catch(() => ({}))
-    return jsonWithVersion(data)
-  } catch {
-    return jsonWithVersion({ success: false })
+    const saved = await upsertProfile(parsed.profile)
+    await maybeDualWriteToAzure(parsed.profile, method)
+    return jsonWithVersion(saved)
+  } catch (error) {
+    console.error(`[api/user][${method}] failed:`, error)
+    return jsonWithVersion({ error: 'Failed to save user profile' }, 500)
   }
 }
 
 export async function POST(request: NextRequest) {
-  return forwardWrite('POST', request)
+  return handleUpsert('POST', request)
 }
 
 export async function PUT(request: NextRequest) {
-  return forwardWrite('PUT', request)
+  return handleUpsert('PUT', request)
 }
