@@ -40,19 +40,33 @@ export function buildApiUrl(path: string): string {
 export function getPublicFileUrl(filename: string): string {
   if (!filename) return ''
 
+  const normalizedFilename = filename.trim()
+
   // Already absolute URL
-  if (/^https?:\/\//i.test(filename)) {
-    return filename
+  if (/^https?:\/\//i.test(normalizedFilename)) {
+    return normalizedFilename
   }
 
   const { publicBaseUrl, azureBlobSasUrlBase, azureBlobContainer, azureBlobSasToken } = config.storage
-
-  if (publicBaseUrl) {
-    return `${publicBaseUrl.replace(/\/$/, '')}/${filename.replace(/^\//, '')}`
-  }
+  const looksLikeBareFilename = !normalizedFilename.includes('/')
+  const isSameOriginPublicBase =
+    typeof window !== 'undefined' &&
+    publicBaseUrl &&
+    new URL(publicBaseUrl, window.location.origin).origin === window.location.origin
 
   if (azureBlobSasUrlBase && azureBlobContainer && azureBlobSasToken) {
-    return `${azureBlobSasUrlBase}/${azureBlobContainer}/${filename}?${azureBlobSasToken}`
+    return `${azureBlobSasUrlBase}/${azureBlobContainer}/${normalizedFilename.replace(/^\//, '')}?${azureBlobSasToken}`
+  }
+
+  if (publicBaseUrl && !(isSameOriginPublicBase && looksLikeBareFilename)) {
+    return `${publicBaseUrl.replace(/\/$/, '')}/${normalizedFilename.replace(/^\//, '')}`
+  }
+
+  const supabasePublicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseProfileBucket = process.env.NEXT_PUBLIC_SUPABASE_PROFILE_BUCKET || 'profile-documents'
+
+  if (supabasePublicUrl && looksLikeBareFilename) {
+    return `${supabasePublicUrl.replace(/\/$/, '')}/storage/v1/object/public/${supabaseProfileBucket}/${normalizedFilename}`
   }
 
   console.error('Storage configuration is missing')
