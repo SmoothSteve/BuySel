@@ -3,9 +3,33 @@
 let isLoading = false
 let isLoaded = false
 const callbacks: Array<() => void> = []
+const MAPS_BASE_URL = 'https://maps.googleapis.com/maps/api/js'
+
+const getMapsApiKey = (): string => process.env.NEXT_PUBLIC_GOOGLE_MAP_API || ''
+
+export const buildGoogleMapsScriptUrl = (libraries: string[] = []): string => {
+  const params = new URLSearchParams()
+  params.set('key', getMapsApiKey())
+  params.set('loading', 'async')
+  params.set('v', 'weekly')
+
+  if (libraries.length > 0) {
+    params.set('libraries', libraries.join(','))
+  }
+
+  return `${MAPS_BASE_URL}?${params.toString()}`
+}
 
 export const loadGoogleMapsScript = (): Promise<void> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const apiKey = getMapsApiKey()
+    if (!apiKey) {
+      const error = 'Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAP_API)'
+      console.error(error)
+      reject(new Error(error))
+      return
+    }
+
     // If already loaded, resolve immediately
     if (isLoaded || window.google?.maps?.places) {
       isLoaded = true
@@ -20,7 +44,7 @@ export const loadGoogleMapsScript = (): Promise<void> => {
     }
 
     // Check if script already exists
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')
     if (existingScript) {
       // Script exists, wait for it to load
       callbacks.push(resolve)
@@ -38,7 +62,7 @@ export const loadGoogleMapsScript = (): Promise<void> => {
     callbacks.push(resolve)
 
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API}&libraries=places`
+    script.src = buildGoogleMapsScriptUrl(['places'])
     script.async = true
     script.defer = true
     

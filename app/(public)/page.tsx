@@ -16,6 +16,7 @@ import { Property } from '@/types/property'
 import { Offer } from '@/types/offer'
 import type { GoogleMap } from '@/types/google-maps'
 import { usePageView } from '@/hooks/useAudit'
+import { buildGoogleMapsScriptUrl } from '@/utils/googleMapsLoader'
 
 interface UserPropertyFav {
   id: number
@@ -267,8 +268,12 @@ const fetchFavouriteProperties = async () => {
 
   useEffect(() => {
     if (activeTab === 'map' && !window.google?.maps) {
+      if (!process.env.NEXT_PUBLIC_GOOGLE_MAP_API) {
+        console.error('Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAP_API)')
+        return
+      }
       const script = document.createElement('script')
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API}`
+      script.src = buildGoogleMapsScriptUrl()
       script.async = true
       script.defer = true
       script.onload = () => {

@@ -8,6 +8,7 @@ import { Property } from '@/types/property'
 import toast from 'react-hot-toast'
 import { getPhotoUrl } from '@/lib/r2-config'
 import { buildApiUrl } from '@/lib/config'
+import { loadGoogleMapsScript } from '@/utils/googleMapsLoader'
 
 import { useTimezoneCorrection } from '@/hooks/useTimezoneCorrection'
 
@@ -73,28 +74,6 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
 
   useEffect(() => {
     if (currentStep === 'property-details' && addressInputRef.current && !autocompleteRef.current) {
-      const loadGoogleMapsScript = () => {
-        if (window.google?.maps?.places) {
-          initAutocomplete()
-          return
-        }
-
-        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
-        if (existingScript) {
-          existingScript.addEventListener('load', initAutocomplete)
-          return
-        }
-
-        const script = document.createElement('script')
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API}&libraries=places`
-        script.async = true
-        script.defer = true
-        script.onload = () => {
-          initAutocomplete()
-        }
-        document.head.appendChild(script)
-      }
-
       const initAutocomplete = () => {
         if (!addressInputRef.current || !window.google?.maps?.places) return
 
@@ -151,6 +130,12 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
       }
 
       loadGoogleMapsScript()
+        .then(() => {
+          initAutocomplete()
+        })
+        .catch((error) => {
+          console.error('Failed to initialize Google Maps script:', error)
+        })
     }
 
     return () => {
