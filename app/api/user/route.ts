@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendUrl } from '@/lib/server-config'
+import { getAllProfiles, maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
 
 export const runtime = 'nodejs'
 const ROUTE_VERSION = 'user-proxy-v4-2026-04-16'
@@ -37,10 +37,15 @@ export async function GET() {
   } catch {
     return jsonWithVersion([], 502)
   }
+
+  return { profile: body as Record<string, unknown> }
 }
 
-async function forwardWrite(method: 'POST' | 'PUT', request: NextRequest) {
-  const bodyText = await request.text().catch(() => '{}')
+async function handleUpsert(method: 'POST' | 'PUT', request: NextRequest) {
+  const parsed = await parseProfileRequest(request)
+  if ('error' in parsed) {
+    return parsed.error
+  }
 
   try {
     const response = await fetch(backendUrl('/api/user'), {
@@ -79,9 +84,9 @@ async function forwardWrite(method: 'POST' | 'PUT', request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  return forwardWrite('POST', request)
+  return handleUpsert('POST', request)
 }
 
 export async function PUT(request: NextRequest) {
-  return forwardWrite('PUT', request)
+  return handleUpsert('PUT', request)
 }
