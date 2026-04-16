@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { backendUrl } from '@/lib/server-config'
 
 export const runtime = 'nodejs'
-const ROUTE_VERSION = 'user-proxy-v5-2026-04-16'
+const ROUTE_VERSION = 'user-proxy-v4-2026-04-16'
+const NO_BODY_STATUS_CODES = new Set([204, 205, 304])
 
 function withVersionHeaders(headers?: HeadersInit) {
   const responseHeaders = new Headers(headers)
@@ -17,29 +18,11 @@ function jsonWithVersion(body: unknown, status = 200) {
   })
 }
 
-function buildForwardHeaders(request: NextRequest, includeContentType = false) {
-  const headers = new Headers()
-
-  if (includeContentType) {
-    headers.set('Content-Type', 'application/json')
-  }
-
-  const authorization = request.headers.get('authorization')
-  if (authorization) headers.set('authorization', authorization)
-
-  const cookie = request.headers.get('cookie')
-  if (cookie) headers.set('cookie', cookie)
-
-  const clientPrincipal = request.headers.get('x-ms-client-principal')
-  if (clientPrincipal) headers.set('x-ms-client-principal', clientPrincipal)
-
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  if (forwardedFor) headers.set('x-forwarded-for', forwardedFor)
-
-  return headers
+function isNoBodyStatus(status: number) {
+  return NO_BODY_STATUS_CODES.has(status)
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const response = await fetch(backendUrl('/api/user'), {
       headers: buildForwardHeaders(request),
@@ -69,6 +52,13 @@ async function forwardWrite(method: 'POST' | 'PUT', request: NextRequest) {
 
     const responseContentType = response.headers.get('content-type') || ''
     const isJsonResponse = responseContentType.includes('application/json')
+
+    if (isNoBodyStatus(response.status)) {
+      return new NextResponse(null, {
+        status: response.status,
+        headers: withVersionHeaders(),
+      })
+    }
 
     if (isJsonResponse) {
       const data = await response.json().catch(() => ({}))
