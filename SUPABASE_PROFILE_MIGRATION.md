@@ -16,6 +16,11 @@ Required:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
+Accepted aliases (for platform compatibility):
+
+- `NEXT_PUBLIC_SUPABASE_URL` (used if `SUPABASE_URL` is not set)
+- `SUPABASE_SERVICE_KEY` (used if `SUPABASE_SERVICE_ROLE_KEY` is not set)
+
 Optional:
 
 - `SUPABASE_PROFILE_TABLE` (default: `user_profiles`)
@@ -68,4 +73,3 @@ When enabled, profile POST/PUT writes to Supabase first and mirrors to Azure.
 - Keep dual-write on for a validation window.
 - Verify profile create/update/read + upload paths.
 - Disable `PROFILE_DUAL_WRITE_AZURE` once confidence is high.
-

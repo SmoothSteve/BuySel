@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 
 export type UserProfile = {
   id?: number
@@ -59,6 +59,7 @@ const pickFields = (profile: Partial<UserProfile>) => ({
 })
 
 export async function getProfileByEmail(email: string): Promise<UserProfile | null> {
+  const supabase = getSupabaseAdminClient()
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -72,11 +73,41 @@ export async function getProfileByEmail(email: string): Promise<UserProfile | nu
   return data as UserProfile | null
 }
 
+export async function getProfileById(id: number): Promise<UserProfile | null> {
+  const supabase = getSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to fetch profile by id: ${error.message}`)
+  }
+
+  return data as UserProfile | null
+}
+
+export async function getAllProfiles(): Promise<UserProfile[]> {
+  const supabase = getSupabaseAdminClient()
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .order('id', { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch profiles: ${error.message}`)
+  }
+
+  return (data ?? []) as UserProfile[]
+}
+
 export async function upsertProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
   if (!profile.email) {
     throw new Error('email is required to upsert profile')
   }
 
+  const supabase = getSupabaseAdminClient()
   const payload = pickFields(profile)
 
   const { data, error } = await supabase
