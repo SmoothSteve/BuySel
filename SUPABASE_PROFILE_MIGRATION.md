@@ -73,3 +73,28 @@ When enabled, profile POST/PUT writes to Supabase first and mirrors to Azure.
 - Keep dual-write on for a validation window.
 - Verify profile create/update/read + upload paths.
 - Disable `PROFILE_DUAL_WRITE_AZURE` once confidence is high.
+
+## 5) Directly inspect storage bucket contents (images/docs)
+
+Use the helper script to list files in a Supabase bucket.
+
+```bash
+SUPABASE_URL=... \
+SUPABASE_SERVICE_ROLE_KEY=... \
+npm run storage:check-supabase-bucket -- --bucket=profile-documents --recursive
+```
+
+Useful flags:
+
+- `--path=users/123` only list inside a folder path.
+- `--limit=200` change list page size (max 1000).
+- `--signed-urls` include temporary signed URLs for each object.
+- `--signed-url-expiry=3600` signed URL lifetime in seconds.
+
+Example with signed URLs:
+
+```bash
+SUPABASE_URL=... \
+SUPABASE_SERVICE_ROLE_KEY=... \
+npm run storage:check-supabase-bucket -- --bucket=profile-documents --recursive --signed-urls --signed-url-expiry=600
+```
