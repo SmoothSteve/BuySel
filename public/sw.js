@@ -55,7 +55,14 @@ self.addEventListener('fetch', (event) => {
 
   // Never cache other API routes
   if (event.request.url.includes('/api/')) {
-    event.respondWith(fetch(event.request));
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return new Response(JSON.stringify({ error: 'Network unavailable' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      })
+    );
     return;
   }
 
@@ -72,8 +79,15 @@ self.addEventListener('fetch', (event) => {
   } else {
     event.respondWith(
       caches.match(event.request)
-        .then((response) => {
-          return response || fetch(event.request);
+        .then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          return fetch(event.request).catch(() => {
+            // Avoid unhandled promise rejections for failed asset/network requests.
+            return new Response('', { status: 504, statusText: 'Gateway Timeout' });
+          });
         })
     );
   }

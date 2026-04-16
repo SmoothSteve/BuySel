@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendUrl } from '@/lib/server-config'
+import { getProfileById } from '@/lib/server/profile-store'
 
 export const runtime = 'nodejs'
 
@@ -12,19 +12,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 })
     }
 
-    const response = await fetch(backendUrl(`/api/user/${numericId}`), { cache: 'no-store' })
-
-    if (!response.ok) {
+    const profile = await getProfileById(numericId)
+    if (!profile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const data = await response.json().catch(() => null)
-    if (!data) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    return NextResponse.json(profile)
+  } catch (error) {
+    console.error('[api/user/[id]][GET] failed:', error)
+    if (error instanceof Error && error.message.includes('Missing Supabase admin configuration')) {
+      return NextResponse.json({ error: 'Supabase is not configured on server' }, { status: 503 })
     }
-
-    return NextResponse.json(data)
-  } catch {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 }
