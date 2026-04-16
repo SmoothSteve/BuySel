@@ -12,6 +12,16 @@ function localApiUrl(req: NextRequest, path: string) {
   return new URL(path, req.nextUrl.origin).toString()
 }
 
+async function resolveCurrentUserId(req: NextRequest, email: string): Promise<number | null> {
+  const userEmailUrl = localApiUrl(req, `/api/user/email/${encodeURIComponent(email)}`)
+  const userResponse = await fetch(userEmailUrl)
+  if (!userResponse.ok) {
+    return null
+  }
+  const userData = await userResponse.json()
+  return Number(userData.id)
+}
+
 export async function GET(req: NextRequest) {
   const session = await getSession()
 
@@ -25,7 +35,22 @@ export async function GET(req: NextRequest) {
   const sellerId = searchParams.get('sellerId')
   
   try {
+    const userId = await resolveCurrentUserId(req, session.user.email!)
+    if (!userId || Number.isNaN(userId)) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     if (conversationId) {
+      const convDetailResponse = await fetch(backendUrl(`/api/conversation/${conversationId}`))
+      if (!convDetailResponse.ok) {
+        return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+      }
+      const convDetail = await convDetailResponse.json()
+      const isParticipant = userId === convDetail.buyer_id || userId === convDetail.seller_id
+      if (!isParticipant) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       // Get messages for a specific conversation
       const messageUrl = backendUrl(`/api/message/conversation/${conversationId}`)
       console.log('🔵 Fetching messages from:', messageUrl)
@@ -33,18 +58,6 @@ export async function GET(req: NextRequest) {
       const messages = await response.json()
       return NextResponse.json(messages)
     } else {
-      // Get all conversations for the user
-      // First, we need to get the user's numeric ID from their email
-      const userEmailUrl = localApiUrl(req, `/api/user/email/${encodeURIComponent(session.user.email!)}`)
-      console.log('🔵 Fetching user by email from:', userEmailUrl)
-      const userResponse = await fetch(userEmailUrl)
-      if (!userResponse.ok) {
-        console.error('Failed to fetch user by email:', session.user.email)
-        return NextResponse.json({ error: 'User not found' }, { status: 404 })
-      }
-      const userData = await userResponse.json()
-      const userId = userData.id
-      
       const url = backendUrl(`/api/conversation/user/${userId}`)
       console.log('🔵 Fetching conversations from:', url)
       console.log('User ID:', userId)
@@ -104,15 +117,10 @@ export async function POST(req: NextRequest) {
   const { propertyId, sellerId, content, conversationId } = body
 
   try {
-    // Get user's numeric ID from email
-    const userEmailUrl = localApiUrl(req, `/api/user/email/${encodeURIComponent(session.user.email!)}`)
-    console.log('🔵 POST: Fetching user by email from:', userEmailUrl)
-    const userResponse = await fetch(userEmailUrl)
-    if (!userResponse.ok) {
+    const userId = await resolveCurrentUserId(req, session.user.email!)
+    if (!userId || Number.isNaN(userId)) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
-    const userData = await userResponse.json()
-    const userId = userData.id
     
     let convId = conversationId
     let buyerId: number
@@ -191,6 +199,9 @@ export async function POST(req: NextRequest) {
         const convDetail = await convDetailResponse.json()
         buyerId = convDetail.buyer_id
         actualSellerId = convDetail.seller_id
+        if (userId !== buyerId && userId !== actualSellerId) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
         console.log('🔍 Loaded conversation details:', {
           conversation_id: convId,
           buyer_id: buyerId,

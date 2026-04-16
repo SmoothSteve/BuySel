@@ -57,7 +57,7 @@ export default function ConveyancerPage() {
               Professional Conveyancing Network
             </h1>
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Join BuySel's network of licensed conveyancers and access a steady stream
+              Join BuySel&apos;s network of licensed conveyancers and access a steady stream
               of property sale contracts across Queensland
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -86,7 +86,7 @@ export default function ConveyancerPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Join BuySel?</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Work with Queensland's fastest-growing property platform
+              Work with Queensland&apos;s fastest-growing property platform
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -332,7 +332,7 @@ export default function ConveyancerPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Join?</h2>
           <p className="text-xl text-gray-300 mb-8">
-            Start receiving conveyancing work from BuySel's growing property network
+            Start receiving conveyancing work from BuySel&apos;s growing property network
           </p>
           {isAuthenticated ? (
             <Link href="/conveyancer/dashboard" className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold bg-[#FF6600] text-white hover:bg-orange-700 rounded-lg transition-colors">

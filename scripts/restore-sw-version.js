@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 // Read the service worker file
 const swPath = path.join(__dirname, '../public/sw.js');

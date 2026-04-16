@@ -108,7 +108,7 @@ export default function ConveyancerDashboard() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome back, {user?.name || 'Professional'}
           </h1>
-          <p className="text-gray-600">Here's what's happening with your conveyancing work today</p>
+          <p className="text-gray-600">Here&apos;s what&apos;s happening with your conveyancing work today</p>
         </div>
 
         {/* Stats Grid */}
