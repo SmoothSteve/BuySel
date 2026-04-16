@@ -20,12 +20,3 @@ export function getSupabaseAdminClient() {
 
   return supabaseClient
 }
-
-// Backward-compatible named export for existing routes/components that import `{ supabase }`.
-// Uses lazy client resolution so modules can still load even when env is missing.
-export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
-  get(_target, prop) {
-    const client = getSupabaseAdminClient() as Record<string | symbol, unknown>
-    return client[prop]
-  },
-})
