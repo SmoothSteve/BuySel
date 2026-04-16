@@ -1,15 +1,16 @@
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   const response = await fetch(`${process.env.API_BASE_URL}/property`)
   const data = await response.json()
   return Response.json(data)
 }
 
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
+  const supabase = getSupabaseAdminClient()
   const { error } = await supabase
     .from('userpropertyfav')
     .delete()

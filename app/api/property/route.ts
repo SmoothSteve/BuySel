@@ -1,7 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 import { getSession } from '@/lib/auth/session'
 
 export async function GET(request: Request) {
+  const supabase = getSupabaseAdminClient()
   const { searchParams } = new URL(request.url)
   const seller = searchParams.get('seller')
 
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseAdminClient()
     const session = await getSession()
     if (!session?.user?.email) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
