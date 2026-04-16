@@ -22,11 +22,7 @@ export async function POST(request: NextRequest) {
     if (!file || !email || !docType) {
       return NextResponse.json({ error: 'file, email and docType are required' }, { status: 400 })
     }
-    if (user.role !== 'admin' && normalizeEmail(user.email) !== normalizeEmail(email)) {
-      return NextResponse.json({ error: 'Forbidden to upload for this user' }, { status: 403 })
-    }
-
-    if (session.user.role !== 'admin' && email !== session.user.email) {
+    if (session.user.role !== 'admin' && normalizeEmail(session.user.email) !== normalizeEmail(email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
