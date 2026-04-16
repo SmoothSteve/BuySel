@@ -41,8 +41,10 @@ export default function NotificationBar({ onOpenChat }: NotificationBarProps) {
       })
     }
 
-    // Get user's numeric ID from email
-    fetchUserId()
+    const numericUserId = Number(user.id)
+    if (!Number.isNaN(numericUserId)) {
+      subscribeToNotifications(numericUserId)
+    }
 
     return () => {
       if (pusherRef.current) {
@@ -51,23 +53,16 @@ export default function NotificationBar({ onOpenChat }: NotificationBarProps) {
     }
   }, [user])
 
-  const fetchUserId = async () => {
-    try {
-      const response = await fetch('/api/user')
-      if (response.ok) {
-        const userData = await response.json()
-        subscribeToNotifications(userData.id)
-      }
-    } catch (error) {
-      console.error('Failed to fetch user ID:', error)
-    }
-  }
-
   const subscribeToNotifications = (userId: number) => {
     console.log('NotificationBar: Subscribing to channel:', `user-notifications-${userId}`)
     const channel = pusherRef.current!.subscribe(`user-notifications-${userId}`)
     
-    channel.bind('new-message', async (data: any) => {
+    channel.bind('new-message', async (data: {
+      conversationId: string
+      propertyId: number
+      senderName?: string
+      message: string
+    }) => {
       console.log('NotificationBar: Notification received:', data)
       
       // Fetch property details

@@ -99,7 +99,7 @@ export default function Footer() {
             <div className="lg:col-span-1">
               <h3 className="font-semibold mb-4 text-lg">BuySel</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Queensland's property platform connecting sellers, buyers, and professional conveyancers.
+                Queensland&apos;s property platform connecting sellers, buyers, and professional conveyancers.
                 Verified property. No commission. Serving North Queensland.
               </p>
             </div>

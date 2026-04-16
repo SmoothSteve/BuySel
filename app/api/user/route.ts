@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProfiles, maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
+import { requireAuth } from '@/lib/auth/session'
 
 export const runtime = 'nodejs'
 const ROUTE_VERSION = 'user-proxy-v5-2026-04-16'
@@ -34,6 +35,11 @@ async function parseProfileRequest(request: NextRequest) {
 export async function GET() {
   const startedAt = Date.now()
   try {
+    const user = await requireAuth()
+    if (user.role !== 'admin') {
+      return jsonWithVersion({ success: false, error: 'Forbidden' }, 403)
+    }
+
     const profiles = await getAllProfiles()
     return NextResponse.json(profiles, {
       status: 200,
@@ -42,6 +48,9 @@ export async function GET() {
       }),
     })
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return jsonWithVersion({ success: false, error: 'Unauthorized' }, 401)
+    }
     console.error('[api/user][GET] failed:', error)
     const errorMessage = error instanceof Error ? error.message : ''
     const isTimeout = errorMessage.toLowerCase().includes('timeout') || errorMessage.toLowerCase().includes('aborted')
@@ -67,6 +76,18 @@ async function handleUpsert(method: 'POST' | 'PUT', request: NextRequest) {
   const { body } = parsed
 
   try {
+    const user = await requireAuth()
+    const requestedEmail = String(body.email || '').trim().toLowerCase()
+    const sessionEmail = user.email.trim().toLowerCase()
+
+    if (!requestedEmail) {
+      return jsonWithVersion({ success: false, error: 'email is required' }, 400)
+    }
+
+    if (user.role !== 'admin' && requestedEmail !== sessionEmail) {
+      return jsonWithVersion({ success: false, error: 'Forbidden' }, 403)
+    }
+
     const profile = await upsertProfile(body)
 
     try {
@@ -80,6 +101,9 @@ async function handleUpsert(method: 'POST' | 'PUT', request: NextRequest) {
       headers: withVersionHeaders(),
     })
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return jsonWithVersion({ success: false, error: 'Unauthorized' }, 401)
+    }
     console.error(`[api/user][${method}] failed:`, error)
     return jsonWithVersion({ success: false, error: 'Unable to save user profile' }, 500)
   }
