@@ -32,7 +32,7 @@ export type UserProfile = {
 const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
 
 const pickFields = (profile: Partial<UserProfile>) => ({
-  id: profile.id,
+  ...(typeof profile.id === 'number' && profile.id > 0 ? { id: profile.id } : {}),
   email: profile.email,
   firstname: profile.firstname ?? null,
   lastname: profile.lastname ?? null,
