@@ -20,9 +20,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json(profile)
   } catch (error) {
     console.error('[api/user/[id]][GET] failed:', error)
-    if (error instanceof Error && error.message.includes('Missing Supabase admin configuration')) {
-      return NextResponse.json({ error: 'Supabase is not configured on server' }, { status: 503 })
-    }
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 }
