@@ -47,6 +47,22 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests in the cache strategy.
+  // Non-GET requests (POST/PUT/DELETE/etc.) should always hit the network.
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+
+  // Do not apply custom fallback behavior for cross-origin requests.
+  // This avoids masking upstream errors from external services with synthetic 504s.
+  if (requestUrl.origin !== self.location.origin) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // Never cache NextAuth API routes - they need real-time responses
   if (event.request.url.includes('/api/auth/')) {
     event.respondWith(fetch(event.request));
@@ -84,10 +100,7 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
 
-          return fetch(event.request).catch(() => {
-            // Avoid unhandled promise rejections for failed asset/network requests.
-            return new Response('', { status: 504, statusText: 'Gateway Timeout' });
-          });
+          return fetch(event.request).catch(() => Response.error());
         })
     );
   }
