@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProfiles, maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
-import { backendUrl } from '@/lib/server-config'
 
 export const runtime = 'nodejs'
-const ROUTE_VERSION = 'user-supabase-v2-2026-04-16'
+const ROUTE_VERSION = 'user-proxy-v4-2026-04-16'
+const NO_BODY_STATUS_CODES = new Set([204, 205, 304])
 
 function withVersionHeaders(headers?: HeadersInit) {
   const responseHeaders = new Headers(headers)
@@ -18,41 +18,24 @@ function jsonWithVersion(body: unknown, status = 200) {
   })
 }
 
-function statusForError(error: unknown) {
-  return error instanceof Error && error.message.includes('Missing Supabase admin configuration') ? 503 : 500
-}
-
-async function tryLegacyUserFallback() {
-  try {
-    const response = await fetch(backendUrl('/api/user'), { cache: 'no-store' })
-    if (!response.ok) return null
-
-    const data = await response.json().catch(() => [])
-    return Array.isArray(data) ? data : []
-  } catch {
-    return null
-  }
+function isNoBodyStatus(status: number) {
+  return NO_BODY_STATUS_CODES.has(status)
 }
 
 export async function GET() {
   try {
-    const profiles = await getAllProfiles()
-    return jsonWithVersion(profiles)
-  } catch (error) {
-    console.error('[api/user][GET] failed:', error)
-    const legacyUsers = await tryLegacyUserFallback()
-    if (legacyUsers) {
-      return jsonWithVersion(legacyUsers, 200)
+    const response = await fetch(backendUrl('/api/user'), {
+      headers: buildForwardHeaders(request),
+      cache: 'no-store'
+    })
+    if (!response.ok) {
+      return jsonWithVersion([], response.status)
     }
-    return jsonWithVersion([], statusForError(error))
-  }
-}
 
-async function parseProfileRequest(request: NextRequest) {
-  const body = await request.json().catch(() => null)
-
-  if (!body || typeof body !== 'object' || !('email' in body) || typeof body.email !== 'string' || !body.email.trim()) {
-    return { error: jsonWithVersion({ error: 'email is required' }, 400) }
+    const data = await response.json().catch(() => [])
+    return Array.isArray(data) ? data : []
+  } catch {
+    return jsonWithVersion([], 502)
   }
 
   return { profile: body as Record<string, unknown> }
@@ -65,12 +48,38 @@ async function handleUpsert(method: 'POST' | 'PUT', request: NextRequest) {
   }
 
   try {
-    const saved = await upsertProfile(parsed.profile)
-    await maybeDualWriteToAzure(parsed.profile, method)
-    return jsonWithVersion(saved)
-  } catch (error) {
-    console.error(`[api/user][${method}] failed:`, error)
-    return jsonWithVersion({ error: 'Failed to save user profile' }, statusForError(error))
+    const response = await fetch(backendUrl('/api/user'), {
+      method,
+      headers: buildForwardHeaders(request, true),
+      body: bodyText || '{}',
+      cache: 'no-store',
+    })
+
+    const responseContentType = response.headers.get('content-type') || ''
+    const isJsonResponse = responseContentType.includes('application/json')
+
+    if (isNoBodyStatus(response.status)) {
+      return new NextResponse(null, {
+        status: response.status,
+        headers: withVersionHeaders(),
+      })
+    }
+
+    if (isJsonResponse) {
+      const data = await response.json().catch(() => ({}))
+      return NextResponse.json(data, {
+        status: response.status,
+        headers: withVersionHeaders(),
+      })
+    }
+
+    const text = await response.text().catch(() => '')
+    return new NextResponse(text, {
+      status: response.status,
+      headers: withVersionHeaders({ 'content-type': responseContentType || 'text/plain' }),
+    })
+  } catch {
+    return jsonWithVersion({ success: false, error: 'Unable to reach user service' }, 502)
   }
 }
 
