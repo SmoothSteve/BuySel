@@ -32,15 +32,29 @@ async function parseProfileRequest(request: NextRequest) {
 }
 
 export async function GET() {
+  const startedAt = Date.now()
   try {
     const profiles = await getAllProfiles()
     return NextResponse.json(profiles, {
       status: 200,
-      headers: withVersionHeaders(),
+      headers: withVersionHeaders({
+        'x-buysel-query-duration-ms': String(Date.now() - startedAt),
+      }),
     })
   } catch (error) {
     console.error('[api/user][GET] failed:', error)
-    return jsonWithVersion([], 502)
+    const errorMessage = error instanceof Error ? error.message : ''
+    const isTimeout = errorMessage.toLowerCase().includes('timeout') || errorMessage.toLowerCase().includes('aborted')
+
+    return jsonWithVersion(
+      {
+        success: false,
+        error: isTimeout
+          ? 'User profile query timed out. Check Supabase database performance/indexing.'
+          : 'Failed to fetch users',
+      },
+      isTimeout ? 504 : 502
+    )
   }
 }
 
