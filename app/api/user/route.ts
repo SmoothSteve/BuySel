@@ -32,10 +32,10 @@ export async function GET() {
       return jsonWithVersion([], response.status)
     }
 
-    const response = await fetch(legacyUrl, { cache: 'no-store' })
-    if (!response.ok) return null
+    const legacyResponse = await fetch(legacyUrl, { cache: 'no-store' })
+    if (!legacyResponse.ok) return null
 
-    const data = await response.json().catch(() => [])
+    const data = await legacyResponse.json().catch(() => [])
     return Array.isArray(data) ? data : []
   } catch {
     return jsonWithVersion([], 502)
