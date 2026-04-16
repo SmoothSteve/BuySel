@@ -119,6 +119,7 @@ export default function UserDetailsModal({
                             disabled={loadingPhoto}
                             onChange={async (e) => {
                               const newVerified = e.target.checked
+                              const newDate = newVerified ? new Date().toISOString() : null
                               setLoadingPhoto(true)
 
                               const updatedData = {
@@ -128,7 +129,7 @@ export default function UserDetailsModal({
                                 idverified: selectedSeller.idverified ? new Date(selectedSeller.idverified).toISOString() : null,
                                 ratesnoticeverified: selectedSeller.ratesnoticeverified ? new Date(selectedSeller.ratesnoticeverified).toISOString() : null,
                                 titlesearchverified: selectedSeller.titlesearchverified ? new Date(selectedSeller.titlesearchverified).toISOString() : null,
-                                photoverified: newVerified
+                                photoverified: newDate
                               }
 
                               try {
@@ -139,7 +140,7 @@ export default function UserDetailsModal({
                                 })
 
                                 if (response.ok) {
-                                  const updatedSeller = { ...selectedSeller, photoverified: newVerified }
+                                  const updatedSeller = { ...selectedSeller, photoverified: newDate }
                                   setSelectedSeller(updatedSeller)
                                   updateUserData(updatedSeller)
                                   invalidateUserDataCache() // Invalidate cache for all components
