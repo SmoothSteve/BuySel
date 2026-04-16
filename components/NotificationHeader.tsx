@@ -11,7 +11,8 @@ interface NotificationHeaderProps {
 }
 
 export default function NotificationHeader({ onOpenChat }: NotificationHeaderProps) {
-  const { user, isAuthenticated } = useAuth()
+  void onOpenChat
+  const { isAuthenticated } = useAuth()
   const { userId, isLoading: userDataLoading } = useUserData()
   const [showPermissionBanner, setShowPermissionBanner] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
@@ -19,10 +20,9 @@ export default function NotificationHeader({ onOpenChat }: NotificationHeaderPro
   const [showSuccess, setShowSuccess] = useState(false)
 
   useEffect(() => {
-    console.log('[NotificationHeader] Effect running, userId:', userId, 'loading:', userDataLoading)
+    if (!isAuthenticated) return
 
     if (userDataLoading || !userId) {
-      console.log('[NotificationHeader] Waiting for user data')
       return
     }
 
@@ -57,7 +57,7 @@ export default function NotificationHeader({ onOpenChat }: NotificationHeaderPro
         }
       }
     }
-  }, [userId, userDataLoading])
+  }, [isAuthenticated, isSubscribed, userId, userDataLoading])
 
   const handleEnableNotifications = async () => {
     console.log('[NotificationHeader] Requesting notification permission')
@@ -119,6 +119,7 @@ export default function NotificationHeader({ onOpenChat }: NotificationHeaderPro
 
   // Check if banner was recently dismissed
   useEffect(() => {
+    if (!isAuthenticated) return
     const dismissedAt = localStorage.getItem('notification-banner-dismissed')
     if (dismissedAt) {
       const daysSinceDismissed = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60 * 24)
@@ -127,7 +128,7 @@ export default function NotificationHeader({ onOpenChat }: NotificationHeaderPro
         setShowPermissionBanner(false)
       }
     }
-  }, [])
+  }, [isAuthenticated])
 
   if (!showPermissionBanner && !showSuccess) return null
 
@@ -145,7 +146,7 @@ export default function NotificationHeader({ onOpenChat }: NotificationHeaderPro
               <div>
                 <p className="font-semibold text-lg">Push Notifications Enabled!</p>
                 <p className="text-sm text-green-100">
-                  You'll now receive notifications for new messages
+                  You&apos;ll now receive notifications for new messages
                 </p>
               </div>
             </div>
