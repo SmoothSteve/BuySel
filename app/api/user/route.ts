@@ -3,6 +3,7 @@ import { backendUrl } from '@/lib/server-config'
 
 export const runtime = 'nodejs'
 const ROUTE_VERSION = 'user-proxy-v4-2026-04-16'
+const NO_BODY_STATUS_CODES = new Set([204, 205, 304])
 
 function withVersionHeaders(headers?: HeadersInit) {
   const responseHeaders = new Headers(headers)
@@ -15,6 +16,10 @@ function jsonWithVersion(body: unknown, status = 200) {
     status,
     headers: withVersionHeaders(),
   })
+}
+
+function isNoBodyStatus(status: number) {
+  return NO_BODY_STATUS_CODES.has(status)
 }
 
 export async function GET() {
@@ -44,6 +49,13 @@ async function forwardWrite(method: 'POST' | 'PUT', request: NextRequest) {
 
     const responseContentType = response.headers.get('content-type') || ''
     const isJsonResponse = responseContentType.includes('application/json')
+
+    if (isNoBodyStatus(response.status)) {
+      return new NextResponse(null, {
+        status: response.status,
+        headers: withVersionHeaders(),
+      })
+    }
 
     if (isJsonResponse) {
       const data = await response.json().catch(() => ({}))
