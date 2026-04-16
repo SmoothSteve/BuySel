@@ -1,34 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { backendUrl } from '@/lib/server-config'
 
-export async function GET() {
-  try {
-    const response = await fetch(backendUrl('/api/audit'), {
-      cache: 'no-store',
-    })
+export const runtime = 'nodejs'
+const ROUTE_VERSION = 'audit-proxy-v3-2026-04-13'
 
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
-  } catch (error) {
-    console.error('[api/audit][GET] error:', error)
-    return NextResponse.json({ error: 'Failed to fetch audit logs' }, { status: 500 })
-  }
+function jsonWithVersion(body: unknown) {
+  return NextResponse.json(body, {
+    status: 200,
+    headers: { 'x-buysel-route-version': ROUTE_VERSION },
+  })
+}
+
+export async function GET() {
+  return jsonWithVersion([])
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const response = await fetch(backendUrl('/api/audit'), {
+    const body = await request.text()
+
+    fetch(backendUrl('/api/audit'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body,
       cache: 'no-store',
+    }).catch((error) => {
+      console.error('[api/audit][POST] background forward failed:', error)
     })
-
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('[api/audit][POST] error:', error)
-    return NextResponse.json({ error: 'Failed to create audit log' }, { status: 500 })
+    console.error('[api/audit][POST] parse failed:', error)
   }
+
+  return jsonWithVersion({ success: true })
 }

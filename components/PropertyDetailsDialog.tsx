@@ -26,10 +26,9 @@ interface PropertyDetailsDialogProps {
 }
 
 export default function PropertyDetailsDialog({ property, onClose }: PropertyDetailsDialogProps) {
-  if (!property) return null
   const { userId, userRole } = useUserData()
 
-  const { isAuthenticated, user } = useAuth()
+  const { user } = useAuth()
   const [photos, setPhotos] = useState<Photo[]>([])
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [loadingPhotos, setLoadingPhotos] = useState(true)
@@ -41,10 +40,11 @@ export default function PropertyDetailsDialog({ property, onClose }: PropertyDet
   const [toast, setToast] = useState<string | null>(null)
   const [requestingDoc, setRequestingDoc] = useState<string | null>(null)
   const correctDateForTimezone = useTimezoneCorrection()
+  const propertyId = property?.id ?? 0
 
   // Determine if user can view original documents (seller, admin, or conveyancer)
   const canViewOriginalDocs =
-    userId === property.sellerid ||
+    userId === property?.sellerid ||
     userRole === 'admin' ||
     userRole === 'conveyancer'
   useEffect(() => {
@@ -62,10 +62,12 @@ export default function PropertyDetailsDialog({ property, onClose }: PropertyDet
       }
     }
 
-    if (property.id > 0) {
+    if (propertyId > 0) {
       fetchPhotos()
     }
-  }, [property.id])
+  }, [propertyId])
+
+  if (!property) return null
 
   const handleRequestProperty = async (req:string) => {
     setRequestingDoc(req)

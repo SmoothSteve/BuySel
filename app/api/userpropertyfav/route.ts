@@ -1,13 +1,14 @@
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   const response = await fetch(`${process.env.API_BASE_URL}/property`)
   const data = await response.json()
   return Response.json(data)
 }
 
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 
-export async function POST(request: Request) {
-  const body = await request.json()
+export async function POST(_request: Request) {
+  const supabase = getSupabaseAdminClient()
+  const body = await _request.json()
 
   const { data, error } = await supabase
     .from('userpropertyfav')
