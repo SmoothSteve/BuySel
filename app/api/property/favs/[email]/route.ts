@@ -1,9 +1,10 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 
 export async function GET(
   request: Request,
   { params }: { params: { email: string } }
 ) {
+  const supabase = getSupabaseAdminClient()
   const { data, error } = await supabase
     .from('properties')
     .select('*')
