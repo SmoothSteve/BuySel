@@ -5,17 +5,12 @@ export const config = {
   storage: {
     // Preferred storage URL pattern (Cloudflare R2/public CDN)
     publicBaseUrl: process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE_URL || '',
-
-    // Legacy Azure Blob settings kept temporarily for migration compatibility
-    azureBlobSasToken: process.env.NEXT_PUBLIC_AZUREBLOB_SASTOKEN || '',
-    azureBlobSasUrlBase: process.env.NEXT_PUBLIC_AZUREBLOB_SASURL_BASE || '',
-    azureBlobContainer: process.env.NEXT_PUBLIC_AZUREBLOB_CONTAINER || '',
   },
   api: {
     baseUrl:
       process.env.NEXT_PUBLIC_BACKEND_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
-      'https://buysel.azurewebsites.net',
+      '',
   },
   googleMaps: {
     apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAP_API || '',
@@ -36,7 +31,7 @@ export function buildApiUrl(path: string): string {
   return `${config.api.baseUrl}${normalizedPath}`
 }
 
-// Preferred file URL builder (Cloudflare-first, Azure fallback)
+// Preferred file URL builder (Supabase-first, then publicBaseUrl fallback)
 export function getPublicFileUrl(filename: string): string {
   if (!filename) return ''
 
@@ -49,7 +44,7 @@ export function getPublicFileUrl(filename: string): string {
     return normalizedFilename
   }
 
-  const { publicBaseUrl, azureBlobSasUrlBase, azureBlobContainer, azureBlobSasToken } = config.storage
+  const { publicBaseUrl } = config.storage
   const isSameOriginPublicBase =
     typeof window !== 'undefined' &&
     publicBaseUrl &&
@@ -57,14 +52,8 @@ export function getPublicFileUrl(filename: string): string {
   const supabasePublicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseProfileBucket = process.env.NEXT_PUBLIC_SUPABASE_PROFILE_BUCKET || 'profile-documents'
 
-  // Prefer Supabase for bare filenames (current upload target).
-  // This prevents stale Azure env vars from forcing requests to legacy storage.
   if (supabasePublicUrl && looksLikeBareFilename) {
     return `${supabasePublicUrl.replace(/\/$/, '')}/storage/v1/object/public/${supabaseProfileBucket}/${cleanedFilename}`
-  }
-
-  if (azureBlobSasUrlBase && azureBlobContainer && azureBlobSasToken) {
-    return `${azureBlobSasUrlBase}/${azureBlobContainer}/${cleanedFilename}?${azureBlobSasToken}`
   }
 
   if (publicBaseUrl && !(isSameOriginPublicBase && looksLikeBareFilename)) {
