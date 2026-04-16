@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 import { getSession } from '@/lib/auth/session'
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024
@@ -7,6 +7,7 @@ const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'im
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabaseAdminClient()
     const session = await getSession()
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
