@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageCircle, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth/auth-context'
 
@@ -18,31 +18,98 @@ interface UnreadMessagesIndicatorProps {
   onOpenChat: (propertyId: number, conversationId: string) => void | Promise<void>
 }
 
+interface UnreadResponse {
+  conversations: UnreadConversation[]
+  totalUnread: number
+}
+
+const unreadCache = new Map<string, { data: UnreadResponse; timestamp: number }>()
+const inFlightUnreadRequests = new Map<string, Promise<UnreadResponse>>()
+const CACHE_TTL_MS = 10000
+
+async function fetchUnreadMessagesForEmail(email: string): Promise<UnreadResponse> {
+  const now = Date.now()
+  const cached = unreadCache.get(email)
+
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data
+  }
+
+  const existingRequest = inFlightUnreadRequests.get(email)
+  if (existingRequest) {
+    return existingRequest
+  }
+
+  const requestPromise = (async () => {
+    const response = await fetch('/api/chat/unread', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'same-origin'
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to fetch unread messages (${response.status}): ${errorText}`)
+    }
+
+    const data = await response.json()
+    const normalizedData: UnreadResponse = {
+      conversations: data.conversations || [],
+      totalUnread: data.totalUnread || 0,
+    }
+
+    unreadCache.set(email, { data: normalizedData, timestamp: Date.now() })
+    return normalizedData
+  })()
+
+  inFlightUnreadRequests.set(email, requestPromise)
+
+  try {
+    return await requestPromise
+  } finally {
+    inFlightUnreadRequests.delete(email)
+  }
+}
+
 export default function UnreadMessagesIndicator({ onOpenChat }: UnreadMessagesIndicatorProps) {
-  console.log('🔔 UnreadMessagesIndicator: Component mounting')
-  const { user, isAuthenticated, isLoading } = useAuth()
-  console.log('🔔 UnreadMessagesIndicator: Auth status:', isAuthenticated, 'Loading:', isLoading, 'User:', user)
+  const { user, isAuthenticated } = useAuth()
   const [unreadConversations, setUnreadConversations] = useState<UnreadConversation[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [totalUnread, setTotalUnread] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    console.log('🔔 UnreadMessagesIndicator: useEffect running, user:', user)
+  const refreshUnreadMessages = useCallback(async () => {
     if (!user?.email || !isAuthenticated) {
-      console.log('🔔 UnreadMessagesIndicator: No user email or not authenticated, returning')
+      setUnreadConversations([])
+      setTotalUnread(0)
       return
     }
 
-    // Fetch unread messages on mount and periodically
-    fetchUnreadMessages()
-    const interval = setInterval(fetchUnreadMessages, 30000) // Check every 30 seconds
-
-    return () => clearInterval(interval)
+    try {
+      const data = await fetchUnreadMessagesForEmail(user.email)
+      setUnreadConversations(data.conversations)
+      setTotalUnread(data.totalUnread)
+    } catch (error) {
+      console.error('Failed to fetch unread messages:', error)
+      setUnreadConversations([])
+      setTotalUnread(0)
+    }
   }, [user?.email, isAuthenticated])
 
   useEffect(() => {
-    // Handle clicks outside dropdown
+    if (!user?.email || !isAuthenticated) {
+      return
+    }
+
+    refreshUnreadMessages()
+    const interval = setInterval(refreshUnreadMessages, 30000)
+
+    return () => clearInterval(interval)
+  }, [user?.email, isAuthenticated, refreshUnreadMessages])
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
@@ -53,55 +120,12 @@ export default function UnreadMessagesIndicator({ onOpenChat }: UnreadMessagesIn
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const fetchUnreadMessages = async () => {
-    // Don't fetch if user is not authenticated or email is missing
-    if (!user?.email || !isAuthenticated) {
-      console.log('UnreadMessagesIndicator: Skipping fetch - user not authenticated')
-      return
-    }
-
-    try {
-      console.log('UnreadMessagesIndicator: Fetching unread messages for email:', user?.email)
-      const response = await fetch('/api/chat/unread', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'same-origin'
-      })
-      console.log('UnreadMessagesIndicator: Response status:', response.status)
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log('UnreadMessagesIndicator: Received data:', JSON.stringify(data, null, 2))
-        setUnreadConversations(data.conversations || [])
-        setTotalUnread(data.totalUnread || 0)
-        console.log('UnreadMessagesIndicator: Set totalUnread to:', data.totalUnread)
-      } else {
-        const errorText = await response.text()
-        console.error('UnreadMessagesIndicator: Failed to fetch. Status:', response.status, 'Error:', errorText)
-        // Reset state on error
-        setUnreadConversations([])
-        setTotalUnread(0)
-      }
-    } catch (error) {
-      console.error('Failed to fetch unread messages:', error)
-      // Reset state on error to prevent showing stale data
-      setUnreadConversations([])
-      setTotalUnread(0)
-    }
-  }
-
   const handleConversationClick = async (conv: UnreadConversation) => {
     setIsOpen(false)
     await onOpenChat(conv.propertyId, conv.conversationId)
-    // Refresh unread count after opening chat
-    setTimeout(fetchUnreadMessages, 1000)
+    setTimeout(refreshUnreadMessages, 1000)
   }
 
-  // Debug: Always render to check if component is mounting
-  console.log('UnreadMessagesIndicator: Rendering with totalUnread:', totalUnread)
-  
   if (totalUnread === 0) return null
 
   return (
@@ -133,7 +157,7 @@ export default function UnreadMessagesIndicator({ onOpenChat }: UnreadMessagesIn
               </button>
             </h3>
           </div>
-          
+
           <div className="overflow-y-auto max-h-80">
             {unreadConversations.length === 0 ? (
               <p className="p-4 text-gray-500 text-center">No unread messages</p>
@@ -158,9 +182,9 @@ export default function UnreadMessagesIndicator({ onOpenChat }: UnreadMessagesIn
                       <p className="text-sm text-gray-600 truncate">{conv.otherUserName}</p>
                       <p className="text-xs text-gray-500 truncate">{conv.lastMessage}</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(conv.timestamp).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                        {new Date(conv.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}
                       </p>
                     </div>
