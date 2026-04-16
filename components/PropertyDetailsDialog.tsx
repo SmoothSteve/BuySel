@@ -28,7 +28,7 @@ interface PropertyDetailsDialogProps {
 export default function PropertyDetailsDialog({ property, onClose }: PropertyDetailsDialogProps) {
   const { userId, userRole } = useUserData()
 
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const [photos, setPhotos] = useState<Photo[]>([])
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [loadingPhotos, setLoadingPhotos] = useState(true)
