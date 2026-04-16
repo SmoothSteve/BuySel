@@ -33,7 +33,7 @@ export async function GET() {
     }
 
     const data = await response.json().catch(() => [])
-    return jsonWithVersion(Array.isArray(data) ? data : [])
+    return Array.isArray(data) ? data : []
   } catch {
     return jsonWithVersion([], 502)
   }
