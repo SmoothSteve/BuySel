@@ -1,11 +1,12 @@
 export const runtime = 'nodejs'
 
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { GOOGLE_CONFIG } from '@/lib/auth/oauth-config'
 import { getSession } from '@/lib/auth/session'
 
 export async function GET(request: NextRequest) {
+  const supabase = getSupabaseAdminClient()
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const error = searchParams.get('error')
