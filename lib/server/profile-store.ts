@@ -74,6 +74,7 @@ export async function getProfileByEmail(email: string): Promise<UserProfile | nu
 }
 
 export async function getProfileById(id: number): Promise<UserProfile | null> {
+  const supabase = getSupabaseAdminClient()
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -88,6 +89,7 @@ export async function getProfileById(id: number): Promise<UserProfile | null> {
 }
 
 export async function getAllProfiles(): Promise<UserProfile[]> {
+  const supabase = getSupabaseAdminClient()
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
