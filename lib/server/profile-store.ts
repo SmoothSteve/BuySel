@@ -30,6 +30,46 @@ export type UserProfile = {
 }
 
 const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
+const QUERY_TIMEOUT_MS = Number(process.env.SUPABASE_PROFILE_QUERY_TIMEOUT_MS || 8000)
+
+const PROFILE_SELECT_COLUMNS = [
+  'id',
+  'email',
+  'firstname',
+  'lastname',
+  'middlename',
+  'dateofbirth',
+  'mobile',
+  'address',
+  'residencystatus',
+  'maritalstatus',
+  'powerofattorney',
+  'idtype',
+  'idbloburl',
+  'idverified',
+  'termsconditions',
+  'privacypolicy',
+  'dte',
+  'ratesnotice',
+  'titlesearch',
+  'ratesnoticeverified',
+  'titlesearchverified',
+  'photoazurebloburl',
+  'photoverified',
+  'role',
+  'created_at',
+  'updated_at',
+].join(',')
+
+const createTimeoutController = () => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort('Supabase profile query timeout'), QUERY_TIMEOUT_MS)
+
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timeout),
+  }
+}
 
 const normalizeVerificationValue = (
   value: string | boolean | null | undefined
@@ -75,11 +115,22 @@ const pickFields = (profile: Partial<UserProfile>) => ({
 
 export async function getProfileByEmail(email: string): Promise<UserProfile | null> {
   const supabase = getSupabaseAdminClient()
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .eq('email', email)
-    .maybeSingle()
+  const { signal, clear } = createTimeoutController()
+  let data: unknown
+  let error: { message: string } | null
+
+  try {
+    const result = await supabase
+      .from(TABLE)
+      .select(PROFILE_SELECT_COLUMNS)
+      .abortSignal(signal)
+      .eq('email', email)
+      .maybeSingle()
+    data = result.data
+    error = result.error
+  } finally {
+    clear()
+  }
 
   if (error) {
     throw new Error(`Failed to fetch profile by email: ${error.message}`)
@@ -90,11 +141,22 @@ export async function getProfileByEmail(email: string): Promise<UserProfile | nu
 
 export async function getProfileById(id: number): Promise<UserProfile | null> {
   const supabase = getSupabaseAdminClient()
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
+  const { signal, clear } = createTimeoutController()
+  let data: unknown
+  let error: { message: string } | null
+
+  try {
+    const result = await supabase
+      .from(TABLE)
+      .select(PROFILE_SELECT_COLUMNS)
+      .abortSignal(signal)
+      .eq('id', id)
+      .maybeSingle()
+    data = result.data
+    error = result.error
+  } finally {
+    clear()
+  }
 
   if (error) {
     throw new Error(`Failed to fetch profile by id: ${error.message}`)
@@ -105,10 +167,21 @@ export async function getProfileById(id: number): Promise<UserProfile | null> {
 
 export async function getAllProfiles(): Promise<UserProfile[]> {
   const supabase = getSupabaseAdminClient()
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .order('id', { ascending: true })
+  const { signal, clear } = createTimeoutController()
+  let data: unknown[] | null
+  let error: { message: string } | null
+
+  try {
+    const result = await supabase
+      .from(TABLE)
+      .select(PROFILE_SELECT_COLUMNS)
+      .abortSignal(signal)
+      .order('id', { ascending: true })
+    data = result.data
+    error = result.error
+  } finally {
+    clear()
+  }
 
   if (error) {
     throw new Error(`Failed to fetch profiles: ${error.message}`)

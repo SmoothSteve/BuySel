@@ -307,6 +307,7 @@ export default function AdminUsersPage() {
   const router = useRouter()
   const [apiUsers, setApiUsers] = useState<Seller[]>([])
   const [loading, setLoading] = useState(true)
+  const [usersLoadError, setUsersLoadError] = useState<string | null>(null)
   const [users, setUsers] = useState(mockUsers)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterRole, setFilterRole] = useState('all')
@@ -382,16 +383,21 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
+      setUsersLoadError(null)
       const response = await fetch('/api/user')
       if (response.ok) {
         const rawData = await response.json()
         const data: Seller[] = Array.isArray(rawData) ? rawData.map(normalizeSeller) : []
         setApiUsers(data)
       } else {
-        console.error('Failed to fetch users')
+        const payload = await response.json().catch(() => null) as { error?: string } | null
+        const message = payload?.error || `Failed to fetch users (${response.status})`
+        console.error(message)
+        setUsersLoadError(message)
       }
     } catch (error) {
       console.error('Error fetching users:', error)
+      setUsersLoadError('Failed to load users. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -520,6 +526,12 @@ export default function AdminUsersPage() {
             </select>
           </div>
         </div>
+
+        {usersLoadError && (
+          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {usersLoadError}
+          </div>
+        )}
 
         {/* Users Table/Cards */}
         {loading ? (
