@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAllProfiles, maybeDualWriteToAzure, upsertProfile } from '@/lib/server/profile-store'
 
 export const runtime = 'nodejs'
-const ROUTE_VERSION = 'user-proxy-v4-2026-04-16'
-const NO_BODY_STATUS_CODES = new Set([204, 205, 304])
+const ROUTE_VERSION = 'user-proxy-v5-2026-04-16'
 
 function withVersionHeaders(headers?: HeadersInit) {
   const responseHeaders = new Headers(headers)
@@ -18,31 +17,31 @@ function jsonWithVersion(body: unknown, status = 200) {
   })
 }
 
-function isNoBodyStatus(status: number) {
-  return NO_BODY_STATUS_CODES.has(status)
+async function parseProfileRequest(request: NextRequest) {
+  const rawBody = await request.text()
+  const bodyText = rawBody.trim() ? rawBody : '{}'
+
+  try {
+    const body = JSON.parse(bodyText) as Record<string, unknown>
+    return { body, bodyText }
+  } catch {
+    return {
+      error: jsonWithVersion({ success: false, error: 'Invalid JSON body' }, 400),
+    }
+  }
 }
 
 export async function GET() {
   try {
-    const response = await fetch(backendUrl('/api/user'), {
-      headers: buildForwardHeaders(request),
-      cache: 'no-store'
+    const profiles = await getAllProfiles()
+    return NextResponse.json(profiles, {
+      status: 200,
+      headers: withVersionHeaders(),
     })
-    if (!response.ok) {
-      return jsonWithVersion([], response.status)
-    }
-
-    const legacyResponse = await fetch(legacyUrl, { cache: 'no-store' })
-
-if (!legacyResponse.ok) return null
-
-const data = await legacyResponse.json().catch(() => [])
-    return Array.isArray(data) ? data : []
-  } catch {
+  } catch (error) {
+    console.error('[api/user][GET] failed:', error)
     return jsonWithVersion([], 502)
   }
-
-  return { profile: body as Record<string, unknown> }
 }
 
 async function handleUpsert(method: 'POST' | 'PUT', request: NextRequest) {
@@ -51,39 +50,24 @@ async function handleUpsert(method: 'POST' | 'PUT', request: NextRequest) {
     return parsed.error
   }
 
+  const { body } = parsed
+
   try {
-    const response = await fetch(backendUrl('/api/user'), {
-      method,
-      headers: buildForwardHeaders(request, true),
-      body: bodyText || '{}',
-      cache: 'no-store',
-    })
+    const profile = await upsertProfile(body)
 
-    const responseContentType = response.headers.get('content-type') || ''
-    const isJsonResponse = responseContentType.includes('application/json')
-
-    if (isNoBodyStatus(response.status)) {
-      return new NextResponse(null, {
-        status: response.status,
-        headers: withVersionHeaders(),
-      })
+    try {
+      await maybeDualWriteToAzure(profile, method)
+    } catch (dualWriteError) {
+      console.warn(`[api/user][${method}] dual-write warning:`, dualWriteError)
     }
 
-    if (isJsonResponse) {
-      const data = await response.json().catch(() => ({}))
-      return NextResponse.json(data, {
-        status: response.status,
-        headers: withVersionHeaders(),
-      })
-    }
-
-    const text = await response.text().catch(() => '')
-    return new NextResponse(text, {
-      status: response.status,
-      headers: withVersionHeaders({ 'content-type': responseContentType || 'text/plain' }),
+    return NextResponse.json(profile, {
+      status: method === 'POST' ? 201 : 200,
+      headers: withVersionHeaders(),
     })
-  } catch {
-    return jsonWithVersion({ success: false, error: 'Unable to reach user service' }, 502)
+  } catch (error) {
+    console.error(`[api/user][${method}] failed:`, error)
+    return jsonWithVersion({ success: false, error: 'Unable to save user profile' }, 500)
   }
 }
 
