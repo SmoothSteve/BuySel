@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 
 export type UserProfile = {
   id?: number
@@ -59,6 +59,7 @@ const pickFields = (profile: Partial<UserProfile>) => ({
 })
 
 export async function getProfileByEmail(email: string): Promise<UserProfile | null> {
+  const supabase = getSupabaseAdminClient()
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -104,6 +105,7 @@ export async function upsertProfile(profile: Partial<UserProfile>): Promise<User
     throw new Error('email is required to upsert profile')
   }
 
+  const supabase = getSupabaseAdminClient()
   const payload = pickFields(profile)
 
   const { data, error } = await supabase
