@@ -24,7 +24,10 @@ function isNoBodyStatus(status: number) {
 
 export async function GET() {
   try {
-    const response = await fetch(backendUrl('/api/user'), { cache: 'no-store' })
+    const response = await fetch(backendUrl('/api/user'), {
+      headers: buildForwardHeaders(request),
+      cache: 'no-store'
+    })
     if (!response.ok) {
       return jsonWithVersion([], response.status)
     }
@@ -42,7 +45,7 @@ async function forwardWrite(method: 'POST' | 'PUT', request: NextRequest) {
   try {
     const response = await fetch(backendUrl('/api/user'), {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildForwardHeaders(request, true),
       body: bodyText || '{}',
       cache: 'no-store',
     })
