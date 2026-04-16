@@ -53,6 +53,7 @@ export default function SellerPage() {
   const [offersPopupProperty, setOffersPopupProperty] = useState<Property | null>(null)
   const mapRef = useRef<HTMLDivElement>(null)
   const googleMapRef = useRef<GoogleMap | null>(null)
+  const hasWarnedMissingMapsApiKey = useRef(false)
   const [showProfileDialog, setShowProfileDialog] = useState(false)
 
   useEffect(() => {
@@ -156,7 +157,10 @@ export default function SellerPage() {
   useEffect(() => {
     if (activeTab === 'map' && !window.google?.maps) {
       if (!process.env.NEXT_PUBLIC_GOOGLE_MAP_API) {
-        console.error('Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAP_API)')
+        if (!hasWarnedMissingMapsApiKey.current) {
+          console.warn('Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAP_API)')
+          hasWarnedMissingMapsApiKey.current = true
+        }
         return
       }
       const script = document.createElement('script')

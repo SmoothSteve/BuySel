@@ -45,6 +45,7 @@ export default function HomePage() {
   const { userId } = useUserData()
   const mapRef = useRef<HTMLDivElement>(null)
   const googleMapRef = useRef<GoogleMap | null>(null)
+  const hasWarnedMissingMapsApiKey = useRef(false)
 
   useEffect(() => {
   // Handle redirect AFTER login
@@ -269,7 +270,10 @@ const fetchFavouriteProperties = async () => {
   useEffect(() => {
     if (activeTab === 'map' && !window.google?.maps) {
       if (!process.env.NEXT_PUBLIC_GOOGLE_MAP_API) {
-        console.error('Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAP_API)')
+        if (!hasWarnedMissingMapsApiKey.current) {
+          console.warn('Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAP_API)')
+          hasWarnedMissingMapsApiKey.current = true
+        }
         return
       }
       const script = document.createElement('script')

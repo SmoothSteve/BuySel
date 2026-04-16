@@ -4,6 +4,7 @@ let isLoading = false
 let isLoaded = false
 const callbacks: Array<() => void> = []
 const MAPS_BASE_URL = 'https://maps.googleapis.com/maps/api/js'
+let hasLoggedMissingApiKey = false
 
 const getMapsApiKey = (): string => process.env.NEXT_PUBLIC_GOOGLE_MAP_API || ''
 
@@ -25,7 +26,10 @@ export const loadGoogleMapsScript = (): Promise<void> => {
     const apiKey = getMapsApiKey()
     if (!apiKey) {
       const error = 'Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAP_API)'
-      console.error(error)
+      if (!hasLoggedMissingApiKey) {
+        console.warn(error)
+        hasLoggedMissingApiKey = true
+      }
       reject(new Error(error))
       return
     }
