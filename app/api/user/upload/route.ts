@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/session'
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024
 const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic'])
+const normalizeEmail = (email: string) => email.trim().toLowerCase()
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
 
     if (!file || !email || !docType) {
       return NextResponse.json({ error: 'file, email and docType are required' }, { status: 400 })
+    }
+    if (user.role !== 'admin' && normalizeEmail(user.email) !== normalizeEmail(email)) {
+      return NextResponse.json({ error: 'Forbidden to upload for this user' }, { status: 403 })
     }
 
     if (session.user.role !== 'admin' && email !== session.user.email) {
@@ -59,6 +63,9 @@ export async function POST(request: NextRequest) {
       publicUrl: data.publicUrl,
     })
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     console.error('[api/user/upload][POST] error:', error)
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
   }
