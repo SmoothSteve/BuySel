@@ -23,13 +23,28 @@ export type UserProfile = {
   ratesnoticeverified?: string | null
   titlesearchverified?: string | null
   photoazurebloburl?: string | null
-  photoverified?: string | null
+  photoverified?: string | boolean | null
   role?: string | null
   created_at?: string
   updated_at?: string
 }
 
 const TABLE = process.env.SUPABASE_PROFILE_TABLE || 'user_profiles'
+
+const normalizeVerificationValue = (
+  value: string | boolean | null | undefined
+): string | null => {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? new Date().toISOString() : null
+  }
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+}
 
 const pickFields = (profile: Partial<UserProfile>) => ({
   ...(typeof profile.id === 'number' && profile.id > 0 ? { id: profile.id } : {}),
@@ -54,7 +69,7 @@ const pickFields = (profile: Partial<UserProfile>) => ({
   ratesnoticeverified: profile.ratesnoticeverified ?? null,
   titlesearchverified: profile.titlesearchverified ?? null,
   photoazurebloburl: profile.photoazurebloburl ?? null,
-  photoverified: profile.photoverified ?? null,
+  photoverified: normalizeVerificationValue(profile.photoverified),
   role: profile.role ?? 'user',
 })
 
