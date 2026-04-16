@@ -100,7 +100,15 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
 
-          return fetch(event.request).catch(() => Response.error());
+          return fetch(event.request).catch(() => {
+            // Return a normal HTTP response to avoid browser warnings about
+            // `respondWith` resolving to a network error response object.
+            return new Response('Service unavailable while offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' },
+            });
+          });
         })
     );
   }
