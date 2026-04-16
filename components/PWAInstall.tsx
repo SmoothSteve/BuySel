@@ -62,11 +62,17 @@ export default function PWAInstall() {
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
+      const dismissed = localStorage.getItem('pwa-install-dismissed')
+
+      // Only intercept the browser install flow when we intend to show our custom UI.
+      // If dismissed, allow browser-default behavior and avoid console warning noise.
+      if (dismissed) {
+        return
+      }
+
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      if (!localStorage.getItem('pwa-install-dismissed')) {
-        setTimeout(() => setShowInstallBanner(true), 3000)
-      }
+      setTimeout(() => setShowInstallBanner(true), 3000)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)

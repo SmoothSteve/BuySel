@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/auth-context'
 import AdminHeader from '@/components/AdminHeader'
 import Footer from '@/components/Footer'
-import { buildApiUrl, getAzureBlobUrl } from '@/lib/config'
+import { getPublicFileUrl } from '@/lib/config'
 import type { Seller } from '@/types/seller'
 import UserDetailsModal from '@/components/UserDetailsModal'
 import { usePageView } from '@/hooks/useAudit'
@@ -295,12 +295,17 @@ function MockUserDetailsModal({ user, onClose, onStatusChange }: MockUserDetails
   )
 }
 
+const hasValidPhotoUrl = (photoBlobPath: string | null | undefined): string | null => {
+  if (!photoBlobPath || photoBlobPath.trim() === '') return null
+  const photoUrl = getPublicFileUrl(photoBlobPath)
+  return photoUrl.trim() === '' ? null : photoUrl
+}
+
 export default function AdminUsersPage() {
   usePageView('admin-users')
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const [apiUsers, setApiUsers] = useState<Seller[]>([])
-  const [sellersCount, setSellersCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState(mockUsers)
   const [searchQuery, setSearchQuery] = useState('')
@@ -354,7 +359,6 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       fetchUsers()
-      fetchSellersCount()
     }
   }, [authLoading, isAuthenticated])
 
@@ -393,20 +397,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  const fetchSellersCount = async () => {
-    try {
-      const response = await fetch('/api/user')
-      if (response.ok) {
-        const data: Seller[] = await response.json()
-        setSellersCount(data.filter((user) => user.role === 'seller').length)
-      } else {
-        console.error('Failed to fetch sellers count')
-      }
-    } catch (error) {
-      console.error('Error fetching sellers:', error)
-    }
-  }
-
   const filteredUsers = users.filter(user => {
     if (filterRole !== 'all' && user.role !== filterRole) return false
     if (filterStatus !== 'all' && user.status !== filterStatus) return false
@@ -438,8 +428,8 @@ export default function AdminUsersPage() {
   const sortedUsers = [...apiUsers].sort((a, b) => {
     if (!sortField) return 0
 
-    let aValue: any
-    let bValue: any
+    let aValue: string | number
+    let bValue: string | number
 
     switch (sortField) {
       case 'name':
@@ -473,8 +463,8 @@ export default function AdminUsersPage() {
 
   const stats = {
     total: apiUsers.length,
-    buyers: apiUsers.length - sellersCount,
-    sellers: sellersCount
+    sellers: apiUsers.filter((user) => user.role === 'seller').length,
+    buyers: apiUsers.filter((user) => user.role === 'buyer').length
   }
 
   // Show loading state while checking authentication
@@ -631,9 +621,9 @@ export default function AdminUsersPage() {
                   {sortedUsers.map((user) => (
                     <tr key={user.id} className={`hover:bg-gray-50 transition-colors text-black ${!user.idbloburl || user.idbloburl.trim() === '' ? 'bg-red-200' : user.idverified ? 'bg-green-200' : 'bg-orange-200'}`}>
                       <td className="px-6 py-4">
-                        {user.photoazurebloburl && user.photoazurebloburl.trim() !== '' ? (
+                        {hasValidPhotoUrl(user.photoazurebloburl) ? (
                           <img
-                            src={getPublicFileUrl(user.photoazurebloburl)}
+                            src={hasValidPhotoUrl(user.photoazurebloburl) || ''}
                             alt={`${user.firstname} ${user.lastname}`}
                             className="w-12 h-12 object-cover rounded-full"
                           />
@@ -696,7 +686,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          {!user.photoazurebloburl || user.photoazurebloburl.trim() === '' ? (
+                          {!hasValidPhotoUrl(user.photoazurebloburl) ? (
                             <>
                               <Shield className="h-4 w-4 text-red-500 mr-2" />
                               <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-200 text-red-900">
@@ -755,9 +745,9 @@ export default function AdminUsersPage() {
                   <div className="p-4">
                     {/* Header with Photo and Name */}
                     <div className="flex items-start gap-4 mb-4 pb-4 border-b border-gray-200">
-                      {user.photoazurebloburl && user.photoazurebloburl.trim() !== '' ? (
+                      {hasValidPhotoUrl(user.photoazurebloburl) ? (
                         <img
-                          src={getPublicFileUrl(user.photoazurebloburl)}
+                          src={hasValidPhotoUrl(user.photoazurebloburl) || ''}
                           alt={`${user.firstname} ${user.lastname}`}
                           className="w-16 h-16 object-cover rounded-full flex-shrink-0"
                         />
@@ -828,12 +818,12 @@ export default function AdminUsersPage() {
                         <div>
                           <div className="flex items-center mb-1">
                             <Shield className={`h-4 w-4 mr-1.5 ${
-                              !user.photoazurebloburl || user.photoazurebloburl.trim() === '' ? 'text-red-500' :
+                              !hasValidPhotoUrl(user.photoazurebloburl) ? 'text-red-500' :
                               user.photoverified ? 'text-green-500' : 'text-gray-400'
                             }`} />
                             <span className="text-xs text-gray-500">Photo Status</span>
                           </div>
-                          {!user.photoazurebloburl || user.photoazurebloburl.trim() === '' ? (
+                          {!hasValidPhotoUrl(user.photoazurebloburl) ? (
                             <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-200 text-red-900">
                               No Photo
                             </span>
