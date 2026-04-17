@@ -44,6 +44,13 @@ export function getPublicFileUrl(filename: string): string {
     return normalizedFilename
   }
 
+  // User/profile documents are often stored as nested paths (email/file.ext).
+  // Resolve them through a same-origin API route so private buckets and
+  // server/client bucket-name mismatches do not break image loading.
+  if (cleanedFilename.includes('/')) {
+    return `/api/storage/file?path=${encodeURIComponent(cleanedFilename)}`
+  }
+
   const { publicBaseUrl } = config.storage
   const isSameOriginPublicBase =
     typeof window !== 'undefined' &&
