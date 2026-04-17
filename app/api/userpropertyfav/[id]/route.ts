@@ -4,17 +4,19 @@ export async function GET(_request: Request) {
   return Response.json(data)
 }
 
+import { NextRequest } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase'
 
 export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = getSupabaseAdminClient()
   const { error } = await supabase
     .from('userpropertyfav')
     .delete()
-    .eq('id', params.id)
+    .eq('id', id)
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 })
