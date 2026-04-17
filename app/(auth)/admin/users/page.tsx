@@ -358,10 +358,10 @@ export default function AdminUsersPage() {
 
   // Fetch data when authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
+    if (!authLoading && isAuthenticated && user?.role === 'admin') {
       fetchUsers()
     }
-  }, [authLoading, isAuthenticated])
+  }, [authLoading, isAuthenticated, user?.role])
 
   // Show loading state while checking auth
   if (authLoading) {
@@ -380,6 +380,23 @@ export default function AdminUsersPage() {
     return null
   }
 
+  if (user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 p-6">
+        <div className="max-w-lg w-full bg-white rounded-xl shadow-md border border-red-100 p-6 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin access required</h1>
+          <p className="text-gray-600 mb-4">
+            Your account is authenticated but does not have the <span className="font-semibold">admin</span> role,
+            so the users API returns <span className="font-semibold">403 Forbidden</span>.
+          </p>
+          <p className="text-sm text-gray-500">
+            Ask an existing administrator to grant admin permissions to this account, then sign out and sign back in.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const fetchUsers = async () => {
     try {
       setLoading(true)
@@ -391,7 +408,9 @@ export default function AdminUsersPage() {
         setApiUsers(data)
       } else {
         const payload = await response.json().catch(() => null) as { error?: string } | null
-        const message = payload?.error || `Failed to fetch users (${response.status})`
+        const message = response.status === 403
+          ? 'Forbidden: admin role required to view users.'
+          : payload?.error || `Failed to fetch users (${response.status})`
         console.error(message)
         setUsersLoadError(message)
       }
