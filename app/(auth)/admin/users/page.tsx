@@ -343,7 +343,7 @@ export default function AdminUsersPage() {
     titlesearchverified: raw.titlesearchverified || null,
     admin: Boolean(raw.admin),
     photoazurebloburl: raw.photoazurebloburl || null,
-    photoverified: Boolean(raw.photoverified),
+    photoverified: raw.photoverified ? String(raw.photoverified) : null,
   })
 
   // Check authentication

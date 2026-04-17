@@ -23,5 +23,5 @@ export interface Seller {
   titlesearchverified: string | null
   admin: boolean
   photoazurebloburl: string | null
-  photoverified: boolean
+  photoverified: string | null
 }
