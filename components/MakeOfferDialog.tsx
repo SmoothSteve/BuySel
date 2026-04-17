@@ -451,7 +451,11 @@ export default function MakeOfferDialog({
                             type="number"
                             min="1"
                             max="90"
-                            value={conditions[`${condition.key}Days` as keyof OfferConditions] || condition.defaultDays}
+                            value={
+                              typeof conditions[`${condition.key}Days` as keyof OfferConditions] === 'number'
+                                ? (conditions[`${condition.key}Days` as keyof OfferConditions] as number)
+                                : condition.defaultDays
+                            }
                             onChange={(e) => handleConditionDaysChange(condition.key, parseInt(e.target.value) || condition.defaultDays)}
                             className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#FF6600] focus:border-transparent"
                           />
