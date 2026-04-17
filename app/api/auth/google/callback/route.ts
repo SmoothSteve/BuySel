@@ -62,35 +62,38 @@ export async function GET(request: NextRequest) {
     const userInfo = await userResponse.json()
 
     // ✅ Create or fetch user in Supabase
-const { data: existingUser, error: fetchError } = await supabase
-  .from('users')
-  .select('*')
-  .eq('email', userInfo.email)
-  .single()
+    const usersTable = supabase.from('users' as any)
+    const { data: existingUser, error: fetchError } = await usersTable
+      .select('*')
+      .eq('email', userInfo.email)
+      .single()
 
-let userData = existingUser
+    let userData = existingUser
 
-if (fetchError || !existingUser) {
-  const { data: newUser, error: insertError } = await supabase
-    .from('users')
-    .insert([
-      {
-        email: userInfo.email,
-        name: userInfo.name,
-        picture: userInfo.picture,
-        provider: 'google',
-        provider_id: userInfo.id,
-      },
-    ])
-    .select()
-    .single()
+    if (fetchError || !existingUser) {
+      const { data: newUser, error: insertError } = await usersTable
+        .insert([
+          {
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.picture,
+            provider: 'google',
+            provider_id: userInfo.id,
+          },
+        ] as any)
+        .select()
+        .single()
 
-  if (insertError) {
-    throw new Error(insertError.message)
-  }
+      if (insertError) {
+        throw new Error(insertError.message)
+      }
 
-  userData = newUser
-}
+      userData = newUser
+    }
+
+    if (!userData) {
+      throw new Error('User record was not found or created')
+    }
 
     // Create session
     const session = await getSession()
