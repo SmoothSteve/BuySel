@@ -44,6 +44,14 @@ export function getPublicFileUrl(filename: string): string {
     return normalizedFilename
   }
 
+  // Legacy profile documents were sometimes stored as bare names such as
+  // `photo-*.jpg`, `id-*.png`, `rates-*.pdf`, and `title-*.pdf`.
+  // Resolve those through signed URL API instead of assuming public access.
+  const legacyProfileDocPattern = /^(photo|id|rates|title)-\d+\.[a-z0-9]+$/i
+  if (legacyProfileDocPattern.test(cleanedFilename)) {
+    return `/api/storage/file?path=${encodeURIComponent(cleanedFilename)}`
+  }
+
   // User/profile documents are often stored as nested paths (email/file.ext).
   // Resolve them through a same-origin API route so private buckets and
   // server/client bucket-name mismatches do not break image loading.

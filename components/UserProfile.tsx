@@ -270,7 +270,9 @@ export default function UserProfile({ email, isOpen, onClose }: UserProfileProps
       }
 
       const payload = await response.json()
-      return payload.publicUrl || payload.path
+      // Persist storage path (not public URL) so private buckets can be
+      // resolved via `/api/storage/file` on every environment.
+      return payload.path || payload.publicUrl
     } catch (error) {
       console.error('Upload error:', error)
       throw error
