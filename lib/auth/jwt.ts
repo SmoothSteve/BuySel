@@ -1,10 +1,11 @@
 import { SignJWT, jwtVerify } from 'jose'
+import type { JWTPayload as JoseJWTPayload } from 'jose'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
 const JWT_ISSUER = 'buysel-app'
 const JWT_AUDIENCE = 'buysel-api'
 
-export interface JWTPayload {
+export interface JWTPayload extends JoseJWTPayload {
   sub: string // user id
   email: string
   name: string
