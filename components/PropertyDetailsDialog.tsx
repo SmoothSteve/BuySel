@@ -50,7 +50,7 @@ export default function PropertyDetailsDialog({ property, onClose }: PropertyDet
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        const response = await fetch(buildApiUrl(`/api/propertyphoto/${property.id}`))
+        const response = await fetch(buildApiUrl(`/api/propertyphoto/${propertyId}`))
         if (response.ok) {
           const data = await response.json()
           setPhotos(data.filter((p: Photo) => !p.doc))
