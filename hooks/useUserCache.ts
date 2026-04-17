@@ -1,7 +1,7 @@
 'use client'
 
 import { Seller } from '@/types/seller'
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { buildApiUrl } from '@/lib/config'
 
 /*interface UserData {
@@ -62,7 +62,7 @@ export function useUserCache() {
     return null
   }, [])
 
-  const setCachedUser = useCallback((userId: number, userData: UserData) => {
+  const setCachedUser = useCallback((userId: number, userData: Seller) => {
     const cacheKey = `${USER_CACHE_KEY_PREFIX}${userId}`
     
     // Store in both memory and localStorage
@@ -73,7 +73,7 @@ export function useUserCache() {
     console.log(`User ${userId} cached successfully`)
   }, [])
 
-  const fetchUser = useCallback(async (userId: number): Promise<UserData | null> => {
+  const fetchUser = useCallback(async (userId: number): Promise<Seller | null> => {
     // Check cache first
     const cached = getCachedUser(userId)
     if (cached) {
