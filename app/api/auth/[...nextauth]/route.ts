@@ -5,7 +5,7 @@ import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import AzureADProvider from "next-auth/providers/azure-ad";
 
-const handler = NextAuth({
+const { handlers } = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -18,7 +18,6 @@ const handler = NextAuth({
     AzureADProvider({
       clientId: process.env.MICROSOFT_CLIENT_ID!,
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
-      tenantId: process.env.MICROSOFT_TENANT_ID || "common",
     }),
   ],
   pages: {
@@ -27,4 +26,4 @@ const handler = NextAuth({
   secret: process.env.AUTH_SECRET!,
 });
 
-export { handler as GET, handler as POST };
+export const { GET, POST } = handlers;
