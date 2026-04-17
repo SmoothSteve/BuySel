@@ -68,7 +68,15 @@ export async function GET(request: NextRequest) {
       .eq('email', userInfo.email)
       .single()
 
-    let userData = existingUser
+    type AuthUserRecord = {
+      id: string | number
+      email: string
+      name: string | null
+      picture: string | null
+      role: string | null
+    }
+
+    let userData: AuthUserRecord | null = (existingUser as AuthUserRecord | null) ?? null
 
     if (fetchError || !existingUser) {
       const { data: newUser, error: insertError } = await usersTable
@@ -88,7 +96,7 @@ export async function GET(request: NextRequest) {
         throw new Error(insertError.message)
       }
 
-      userData = newUser
+      userData = (newUser as AuthUserRecord | null) ?? null
     }
 
     if (!userData) {
@@ -98,12 +106,12 @@ export async function GET(request: NextRequest) {
     // Create session
     const session = await getSession()
     session.user = {
-      id: userData.id,
+      id: String(userData.id),
       email: userData.email,
-      name: userData.name,
-      image: userData.picture,
+      name: userData.name ?? '',
+      image: userData.picture ?? undefined,
       provider: 'google',
-      role: userData.role,
+      role: userData.role ?? undefined,
     }
     session.isLoggedIn = true
     await session.save()
