@@ -15,6 +15,37 @@ if ! command -v java >/dev/null 2>&1; then
   exit 1
 fi
 
+has_android_sdk_location() {
+  if [[ -n "${ANDROID_HOME:-}" && -d "${ANDROID_HOME}" ]]; then
+    return 0
+  fi
+
+  if [[ -n "${ANDROID_SDK_ROOT:-}" && -d "${ANDROID_SDK_ROOT}" ]]; then
+    return 0
+  fi
+
+  if [[ -f "local.properties" ]] && grep -q '^sdk\.dir=' local.properties; then
+    return 0
+  fi
+
+  return 1
+}
+
+if ! has_android_sdk_location; then
+  cat <<'MSG'
+❌ Android SDK location not found.
+Define one of the following, then retry:
+
+1) Environment variable:
+   ANDROID_HOME=/absolute/path/to/Android/Sdk
+   (or ANDROID_SDK_ROOT)
+
+2) local.properties in repo root:
+   sdk.dir=/absolute/path/to/Android/Sdk
+MSG
+  exit 1
+fi
+
 JAVA_MAJOR="$(java -version 2>&1 | awk -F '[\".]' '/version/ {print $2; exit}')"
 if [[ -n "${JAVA_MAJOR}" && "${JAVA_MAJOR}" -gt 21 ]]; then
   echo "❌ Detected Java ${JAVA_MAJOR}. This project builds reliably with Java 17 or 21."
