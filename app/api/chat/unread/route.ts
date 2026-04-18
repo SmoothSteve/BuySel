@@ -3,8 +3,9 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { backendUrl } from '@/lib/server-config'
+import { getProfileByEmail, getProfileById } from '@/lib/server/profile-store'
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const session = await getSession()
 
   if (!session?.user?.email) {
@@ -12,16 +13,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Get user's numeric ID from email
-    const userEmailUrl = new URL(`/api/user/email/${encodeURIComponent(session.user.email!)}`, req.nextUrl.origin).toString()
-    const userResponse = await fetch(userEmailUrl)
-    
-    if (!userResponse.ok) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Read profile directly from storage so we don't lose auth context on internal fetches.
+    const userProfile = await getProfileByEmail(session.user.email)
+    const userId = userProfile?.id
+
+    if (!userId) {
+      return NextResponse.json({ conversations: [], totalUnread: 0 })
     }
-    
-    const userData = await userResponse.json()
-    const userId = userData.id
 
     // Get unread conversations for the user
     const unreadConvUrl = backendUrl(`/api/conversation/unread/${userId}`)
@@ -63,10 +61,7 @@ export async function GET(req: NextRequest) {
           
           // Get other user's name
           const otherUserId = conv.buyer_id === userId ? conv.seller_id : conv.buyer_id
-          const otherUserResponse = await fetch(new URL(`/api/user/${otherUserId}`, req.nextUrl.origin).toString())
-          const otherUser = otherUserResponse.ok 
-            ? await otherUserResponse.json() 
-            : { firstname: 'User', lastname: '' }
+          const otherUser = (await getProfileById(otherUserId)) ?? { firstname: 'User', lastname: '' }
           
           processedConversations.push({
             conversationId: conv.id.toString(),
