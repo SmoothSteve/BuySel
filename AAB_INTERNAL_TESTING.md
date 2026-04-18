@@ -28,7 +28,11 @@ keytool -genkeypair \
   -validity 10000
 ```
 
-## 3) Add signing credentials (local only)
+## 3) Add signing credentials
+
+Choose one of the following methods.
+
+### Option A: `keystore.properties` (recommended)
 
 Create `keystore.properties` in the repo root:
 
@@ -41,19 +45,30 @@ keyPassword=<your_key_password>
 
 This file is already ignored by git.
 
-## 4) Build the app bundle
+### Option B: environment variables
+
+```bash
+export ANDROID_STORE_FILE=/home/<you>/buysel-upload-key.jks
+export ANDROID_STORE_PASSWORD=<your_store_password>
+export ANDROID_KEY_ALIAS=upload
+export ANDROID_KEY_PASSWORD=<your_key_password>
+```
+
+## 4) Build the release app bundle (`.aab`)
+
+Use the project helper script (supports either signing method above):
 
 ```bash
 ./scripts/build-aab-for-play.sh
 ```
 
-or directly:
+or run Gradle directly:
 
 ```bash
 gradle :app:bundleRelease
 ```
 
-## 5) Find the output
+## 5) Confirm output
 
 Signed bundle output path:
 
@@ -64,23 +79,27 @@ app/build/outputs/bundle/release/app-release.aab
 ## 6) Upload to Google Play internal testing
 
 1. Open Google Play Console.
-2. Go to your app → **Testing** → **Internal testing**.
-3. Create a release and upload `app-release.aab`.
-4. Add testers and roll out the release.
+2. Select your app.
+3. Go to **Testing** → **Internal testing**.
+4. Create a release and upload `app-release.aab`.
+5. Add testers (email list or Google Group).
+6. Roll out the release.
+7. Share the generated opt-in link with testers.
 
-## Optional: use environment variables instead of `keystore.properties`
+## 7) Verify install as a tester
 
-You can export these instead:
+On a tester device:
 
-```bash
-export ANDROID_STORE_FILE=/home/<you>/buysel-upload-key.jks
-export ANDROID_STORE_PASSWORD=<your_store_password>
-export ANDROID_KEY_ALIAS=upload
-export ANDROID_KEY_PASSWORD=<your_key_password>
-```
+1. Open the internal testing opt-in link.
+2. Accept the invite with the tester Google account.
+3. Install/update from Play Store.
+4. Confirm the installed version matches the uploaded release.
 
-Then run:
+## Troubleshooting
 
-```bash
-gradle :app:bundleRelease
-```
+- **"Missing Android signing credentials"**
+  - Ensure either `keystore.properties` exists in repo root, or all 4 `ANDROID_*` variables are exported.
+- **"Detected Java XX"**
+  - Switch to JDK 17 or 21 and retry.
+- **Build succeeds but Play rejects upload**
+  - Confirm `applicationId` and signing key are consistent with previous Play uploads.
