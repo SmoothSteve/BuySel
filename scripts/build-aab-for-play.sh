@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 if ! command -v gradle >/dev/null 2>&1; then
   echo "❌ gradle is not installed or not in PATH"
+  echo "   Install Gradle and try again (e.g. 'brew install gradle' or 'sdk install gradle')."
   exit 1
 fi
 

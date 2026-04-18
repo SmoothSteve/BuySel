@@ -2,6 +2,26 @@
 
 This repository already contains an Android Trusted Web Activity project under `app/`.
 
+## 0) Install prerequisites
+
+You need both:
+
+- Java JDK 17 or 21
+- Gradle available on `PATH` (`gradle -v`)
+
+Windows install examples (pick one package manager):
+
+```powershell
+# Chocolatey
+choco install temurin17jdk gradle -y
+
+# Scoop
+scoop install openjdk17 gradle
+
+# Winget (if available in your environment)
+winget search gradle
+```
+
 ## 1) Use Java 17 or Java 21
 
 This Gradle/Android plugin setup should be built with JDK 17 or 21.
@@ -59,6 +79,18 @@ export ANDROID_KEY_PASSWORD=<your_key_password>
 Use the project helper script (supports either signing method above):
 
 ```bash
+export ANDROID_STORE_FILE=/home/<you>/buysel-upload-key.jks
+export ANDROID_STORE_PASSWORD=<your_store_password>
+export ANDROID_KEY_ALIAS=upload
+export ANDROID_KEY_PASSWORD=<your_key_password>
+```
+
+## 4) Build the release app bundle (`.aab`)
+
+Use a helper script based on your shell:
+
+```bash
+# Bash (macOS/Linux/Git Bash)
 ./scripts/build-aab-for-play.sh
 ```
 
@@ -76,7 +108,6 @@ Signed bundle output path:
 app/build/outputs/bundle/release/app-release.aab
 ```
 
-## 6) Upload to Google Play internal testing
 
 1. Open Google Play Console.
 2. Select your app.
