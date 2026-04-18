@@ -1,4 +1,4 @@
-package au.com.buysel.app;
+package com.buysel.app;
 
 
 
