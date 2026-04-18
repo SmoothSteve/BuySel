@@ -171,12 +171,6 @@ android {
 
         
     }
-    buildTypes {
-        release {
-            minifyEnabled true
-            signingConfig signingConfigs.release
-        }
-    }
     signingConfigs {
         release {
             if (releaseStoreFile != null && releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null) {
@@ -185,6 +179,12 @@ android {
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword
             }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
