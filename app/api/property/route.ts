@@ -32,6 +32,9 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return Response.json({ error: 'Invalid request body' }, { status: 400 })
+    }
     const { id, ...updates } = body
 
     if (!id) {
@@ -61,6 +64,7 @@ export async function PUT(request: Request) {
       .update(updates)
       .eq('id', id)
       .select()
+      .single()
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 })
@@ -82,6 +86,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return Response.json({ error: 'Invalid request body' }, { status: 400 })
+    }
 
     const {
       title,
@@ -113,6 +120,7 @@ export async function POST(request: Request) {
         }
       ])
       .select()
+      .single()
 
     if (error) {
       console.error(error)
