@@ -23,8 +23,8 @@ plugins {
 
 def twaManifest = [
     applicationId: 'au.com.buysel.app',
-    hostName: 'fagaceous-luanne-namely.ngrok-free.dev', // The domain being opened in the TWA.
-    launchUrl: 'https://fagaceous-luanne-namely.ngrok-free.dev', // The start path for the TWA. Must be relative to the domain.
+    hostName: 'buy-sel.vercel.app', // The domain being opened in the TWA.
+    launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
     name: 'BuySel', // The application name.
     launcherName: 'BuySel', // The name shown on the Android Launcher.
     themeColor: '#FF6600', // The color used for the status bar.
@@ -97,12 +97,12 @@ android {
             // The URL the Web Manifest for the Progressive Web App that the TWA points to. This
             // is used by Chrome OS and Meta Quest to open the Web version of the PWA instead of
             // the TWA, as it will probably give a better user experience for non-mobile devices.
-            resValue "string", "webManifestUrl", 'https://fagaceous-luanne-namely.ngrok-free.dev/manifest.json'
+            resValue "string", "webManifestUrl", 'https://buy-sel.vercel.app/manifest.json'
         
 
         
             // This is used by Meta Quest.
-            resValue "string", "fullScopeUrl", 'https://fagaceous-luanne-namely.ngrok-free.dev/'
+            resValue "string", "fullScopeUrl", 'https://buy-sel.vercel.app/'
         
 
         
