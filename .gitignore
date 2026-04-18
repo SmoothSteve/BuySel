@@ -49,6 +49,7 @@ deploy.zip
 # Bubblewrap / TWA generated files
 android-app/
 android.keystore
+keystore.properties
 *.aab
 *.apk
 *.idsig

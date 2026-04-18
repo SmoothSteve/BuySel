@@ -15,6 +15,7 @@
  */
 
 import groovy.xml.MarkupBuilder
+import java.util.Properties
 
 plugins {
     id 'com.android.application'
@@ -49,6 +50,26 @@ def twaManifest = [
     enableSiteSettingsShortcut: 'true',
     orientation: 'portrait-primary',
 ]
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def getSigningValue = { String propertyKey, String envKey ->
+    def propertyValue = keystoreProperties.getProperty(propertyKey)
+    if (propertyValue != null && !propertyValue.trim().isEmpty()) {
+        return propertyValue.trim()
+    }
+    def envValue = System.getenv(envKey)
+    return (envValue != null && !envValue.trim().isEmpty()) ? envValue.trim() : null
+}
+
+def releaseStoreFile = getSigningValue("storeFile", "ANDROID_STORE_FILE")
+def releaseStorePassword = getSigningValue("storePassword", "ANDROID_STORE_PASSWORD")
+def releaseKeyAlias = getSigningValue("keyAlias", "ANDROID_KEY_ALIAS")
+def releaseKeyPassword = getSigningValue("keyPassword", "ANDROID_KEY_PASSWORD")
 
 android {
     compileSdkVersion 36
@@ -153,6 +174,17 @@ android {
     buildTypes {
         release {
             minifyEnabled true
+            signingConfig signingConfigs.release
+        }
+    }
+    signingConfigs {
+        release {
+            if (releaseStoreFile != null && releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     compileOptions {
@@ -161,6 +193,14 @@ android {
     }
     lintOptions {
         checkReleaseBuilds false
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(':app:bundleRelease') || graph.hasTask(':app:assembleRelease')) {
+        if (releaseStoreFile == null || releaseStorePassword == null || releaseKeyAlias == null || releaseKeyPassword == null) {
+            throw new GradleException("Release signing config is missing. Provide keystore.properties or ANDROID_STORE_FILE / ANDROID_STORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD.")
+        }
     }
 }
 
