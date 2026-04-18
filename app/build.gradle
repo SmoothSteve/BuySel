@@ -66,7 +66,23 @@ def getSigningValue = { String propertyKey, String envKey ->
     return (envValue != null && !envValue.trim().isEmpty()) ? envValue.trim() : null
 }
 
-def releaseStoreFile = getSigningValue("storeFile", "ANDROID_STORE_FILE")
+def normalizePathForGradle = { String rawPath ->
+    if (rawPath == null) {
+        return null
+    }
+
+    def normalized = rawPath.trim().replace("\\", "/")
+
+    // Handle malformed Windows drive paths like "C:Users/name/key.jks"
+    // by converting to "C:/Users/name/key.jks".
+    if (normalized ==~ /^[A-Za-z]:[^/].*/) {
+        normalized = normalized[0..1] + "/" + normalized.substring(2)
+    }
+
+    return normalized
+}
+
+def releaseStoreFile = normalizePathForGradle(getSigningValue("storeFile", "ANDROID_STORE_FILE"))
 def releaseStorePassword = getSigningValue("storePassword", "ANDROID_STORE_PASSWORD")
 def releaseKeyAlias = getSigningValue("keyAlias", "ANDROID_KEY_ALIAS")
 def releaseKeyPassword = getSigningValue("keyPassword", "ANDROID_KEY_PASSWORD")
@@ -171,12 +187,6 @@ android {
 
         
     }
-    buildTypes {
-        release {
-            minifyEnabled true
-            signingConfig signingConfigs.release
-        }
-    }
     signingConfigs {
         release {
             if (releaseStoreFile != null && releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null) {
@@ -185,6 +195,12 @@ android {
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword
             }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
