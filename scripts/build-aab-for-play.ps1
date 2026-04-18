@@ -25,50 +25,6 @@ if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
   exit 1
 }
 
-function Get-SdkDirFromLocalProperties {
-  $localPropsPath = Join-Path $rootDir 'local.properties'
-  if (-not (Test-Path $localPropsPath)) {
-    return $null
-  }
-
-  $sdkLine = Get-Content $localPropsPath | Where-Object { $_ -match '^\s*sdk\.dir=' } | Select-Object -First 1
-  if (-not $sdkLine) {
-    return $null
-  }
-
-  return (($sdkLine -split '=', 2)[1]).Trim()
-}
-
-function Test-HasAndroidSdkLocation {
-  if (-not [string]::IsNullOrWhiteSpace($env:ANDROID_HOME) -and (Test-Path $env:ANDROID_HOME)) {
-    return $true
-  }
-
-  if (-not [string]::IsNullOrWhiteSpace($env:ANDROID_SDK_ROOT) -and (Test-Path $env:ANDROID_SDK_ROOT)) {
-    return $true
-  }
-
-  $localSdkDir = Get-SdkDirFromLocalProperties
-  if (-not [string]::IsNullOrWhiteSpace($localSdkDir)) {
-    return $true
-  }
-
-  return $false
-}
-
-if (-not (Test-HasAndroidSdkLocation)) {
-  Write-Host '❌ Android SDK location not found.'
-  Write-Host 'Define one of the following, then retry:'
-  Write-Host ''
-  Write-Host '1) Environment variable:'
-  Write-Host '   $env:ANDROID_HOME="C:\Users\<you>\AppData\Local\Android\Sdk"'
-  Write-Host '   (or $env:ANDROID_SDK_ROOT)'
-  Write-Host ''
-  Write-Host '2) local.properties in repo root:'
-  Write-Host '   sdk.dir=C:\\Users\\<you>\\AppData\\Local\\Android\\Sdk'
-  exit 1
-}
-
 $javaVersionLine = (& java -version 2>&1 | Select-Object -First 1)
 $javaMajor = $null
 if ($javaVersionLine -match '"(\d+)') {
