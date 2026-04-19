@@ -134,3 +134,8 @@ On a tester device:
   - Switch to JDK 17 or 21 and retry.
 - **Build succeeds but Play rejects upload**
   - Confirm `applicationId` and signing key are consistent with previous Play uploads.
+- **URL bar still shows at the top in the Android app**
+  - `display: "standalone"` in `manifest.json` is already set, but this alone does **not** remove the URL bar in a Trusted Web Activity.
+  - You must host a valid `/.well-known/assetlinks.json` that contains the Play App Signing SHA-256 certificate fingerprint for `com.buysel.app`.
+  - Set `ASSETLINKS_SHA256_FINGERPRINTS` in your deployment environment (comma-separated for multiple fingerprints), then redeploy the web app.
+  - After changing Android wrapper settings, upload a new `.aab` to internal testing and update the app on tester devices.
