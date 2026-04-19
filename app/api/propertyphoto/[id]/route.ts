@@ -5,20 +5,29 @@ import { getSupabaseAdminClient } from '@/lib/supabase'
 const PHOTO_TABLE_CANDIDATES = ['propertyphoto', 'propertyphotos'] as const
 
 const isMissingTableError = (error: { code?: string } | null) => error?.code === '42P01'
+const isMissingColumnError = (error: { code?: string } | null) => error?.code === '42703'
 
 async function fetchPropertyPhotos(propertyId: number) {
   const supabase = getSupabaseAdminClient()
   let lastError: { message?: string } | null = null
 
   for (const table of PHOTO_TABLE_CANDIDATES) {
-    const { data, error } = await supabase
+    const baseQuery = supabase
       .from(table)
       .select('*')
       .eq('propertyid', propertyId)
-      .order('dte', { ascending: false })
+    const { data, error } = await baseQuery.order('dte', { ascending: false })
 
     if (!error) {
       return { data: data ?? [], error: null }
+    }
+
+    if (isMissingColumnError(error)) {
+      const { data: fallbackData, error: fallbackError } = await baseQuery
+      if (!fallbackError) {
+        return { data: fallbackData ?? [], error: null }
+      }
+      return { data: [], error: fallbackError }
     }
 
     if (!isMissingTableError(error)) {

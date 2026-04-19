@@ -29,6 +29,10 @@ interface AddPropertyDialogProps {
 
 type WizardStep = 'property-details' | 'price-terms' | 'photos-video' | 'compliance' | 'review'
 
+const MAX_IMAGE_UPLOAD_BYTES = 4 * 1024 * 1024
+const MAX_IMAGE_DIMENSION = 1920
+const DEFAULT_JPEG_QUALITY = 0.82
+
 export default function AddPropertyDialog({  onClose, onSave, property: initialProperty, admin = false }: AddPropertyDialogProps) {
   const [property, setProperty] = useState<Property>(initialProperty)
   const [currentStep, setCurrentStep] = useState<WizardStep>('property-details')
@@ -184,12 +188,15 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current
       const video = videoRef.current
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
+      const sourceWidth = video.videoWidth
+      const sourceHeight = video.videoHeight
+      const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(sourceWidth, sourceHeight))
+      canvas.width = Math.max(1, Math.round(sourceWidth * scale))
+      canvas.height = Math.max(1, Math.round(sourceHeight * scale))
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.drawImage(video, 0, 0)
-        const dataUrl = canvas.toDataURL('image/jpeg')
+        const dataUrl = canvas.toDataURL('image/jpeg', DEFAULT_JPEG_QUALITY)
         setCapturedPhoto(dataUrl)
         setIsUploadedFromLocal(false)
         stopCamera()
@@ -244,11 +251,70 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     return payload.path || payload.publicUrl
   }
 
+  const resizeImage = (image: HTMLImageElement) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      return null
+    }
+
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.width, image.height))
+    canvas.width = Math.max(1, Math.round(image.width * scale))
+    canvas.height = Math.max(1, Math.round(image.height * scale))
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+    return canvas
+  }
+
+  const compressImageFile = async (file: File): Promise<File> => {
+    if (!file.type.startsWith('image/')) {
+      return file
+    }
+
+    const imageUrl = URL.createObjectURL(file)
+
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = () => reject(new Error('Failed to read image'))
+        img.src = imageUrl
+      })
+
+      const canvas = resizeImage(image)
+      if (!canvas) {
+        return file
+      }
+
+      let quality = DEFAULT_JPEG_QUALITY
+      let compressedBlob: Blob | null = null
+      while (quality >= 0.5) {
+        compressedBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+        if (compressedBlob && compressedBlob.size <= MAX_IMAGE_UPLOAD_BYTES) {
+          break
+        }
+        quality -= 0.07
+      }
+
+      if (!compressedBlob) {
+        return file
+      }
+
+      if (compressedBlob.size > MAX_IMAGE_UPLOAD_BYTES) {
+        throw new Error('Photo is too large after compression. Please use a smaller image.')
+      }
+
+      return new File([compressedBlob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    } finally {
+      URL.revokeObjectURL(imageUrl)
+    }
+  }
+
   const uploadPhotoToSupabase = async (dataUrl: string): Promise<string> => {
     try {
       const blob = await (await fetch(dataUrl)).blob()
       const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
-      return await uploadPropertyFile(file, 'photo')
+      const optimizedFile = await compressImageFile(file)
+      return await uploadPropertyFile(optimizedFile, 'photo')
     } catch (error) {
       toast.error(`Upload error: ${error}`)
       throw error
