@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Camera, X, Upload, ChevronLeft, ChevronRight, Plus, ArrowLeft, Home, Building2, Building, MapPin, Hash, Bed, Bath, Car, Maximize, Calendar, Flag, DollarSign, Loader2 } from 'lucide-react'
-import { BlobServiceClient } from '@azure/storage-blob'
 import type { GoogleAutocomplete } from '@/types/google-maps'
 import { Property } from '@/types/property'
 import toast from 'react-hot-toast'
@@ -222,28 +221,34 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     }
   }
 
-  const uploadPhotoToAzure = async (dataUrl: string): Promise<string> => {
+  const uploadPropertyFile = async (
+    file: File,
+    docType: 'photo' | 'building' | 'pest' | 'titlesrch'
+  ): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('propertyid', String(property.id))
+    formData.append('docType', docType)
+
+    const response = await fetch(buildApiUrl('/api/property/upload'), {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({ error: 'Failed to upload file' }))
+      throw new Error(payload.error || 'Failed to upload file')
+    }
+
+    const payload = await response.json()
+    return payload.path || payload.publicUrl
+  }
+
+  const uploadPhotoToSupabase = async (dataUrl: string): Promise<string> => {
     try {
       const blob = await (await fetch(dataUrl)).blob()
       const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
-
-      const baseUrl = process.env.NEXT_PUBLIC_AZUREBLOB_SASURL_BASE!
-      const sasToken = process.env.NEXT_PUBLIC_AZUREBLOB_SASTOKEN!
-      const containerName = process.env.NEXT_PUBLIC_AZUREBLOB_CONTAINER!
-
-      const blobName = `property-${property.id}-${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-      
-      const blockBlobClient = new BlobServiceClient(`${baseUrl}?${sasToken}`)
-        .getContainerClient(containerName)
-        .getBlockBlobClient(blobName)
-
-      await blockBlobClient.uploadData(file, {
-        blobHTTPHeaders: {
-          blobContentType: 'image/jpeg'
-        }
-      })
-      
-      return blobName
+      return await uploadPropertyFile(file, 'photo')
     } catch (error) {
       toast.error(`Upload error: ${error}`)
       throw error
@@ -258,9 +263,9 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
 
     setIsUploading(true)
     try {
-      const blobUrl = await uploadPhotoToAzure(capturedPhoto)
+      const blobUrl = await uploadPhotoToSupabase(capturedPhoto)
 
-      await fetch(buildApiUrl('/api/propertyphoto'), {
+      const saveResponse = await fetch(buildApiUrl('/api/propertyphoto'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,6 +280,11 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
         }),
       })
 
+      if (!saveResponse.ok) {
+        const payload = await saveResponse.json().catch(() => ({ error: 'Failed to save photo metadata' }))
+        throw new Error(payload.error || 'Failed to save photo metadata')
+      }
+
       setCapturedPhoto(null)
       setPhotoTitle('')
       setShowAddPhoto(false)
@@ -288,25 +298,9 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     }
   }
 
-  const uploadInspectionReportToAzure = async (file: File, reportType: 'building' | 'pest' | 'titlesrch'): Promise<string> => {
+  const uploadInspectionReportToSupabase = async (file: File, reportType: 'building' | 'pest' | 'titlesrch'): Promise<string> => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_AZUREBLOB_SASURL_BASE!
-      const sasToken = process.env.NEXT_PUBLIC_AZUREBLOB_SASTOKEN!
-      const containerName = process.env.NEXT_PUBLIC_AZUREBLOB_CONTAINER!
-
-      const blobName = `property-${property.id}-${reportType}-inspection-${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-      
-      const blockBlobClient = new BlobServiceClient(`${baseUrl}?${sasToken}`)
-        .getContainerClient(containerName)
-        .getBlockBlobClient(blobName)
-
-      await blockBlobClient.uploadData(file, {
-        blobHTTPHeaders: {
-          blobContentType: file.type
-        }
-      })
-      
-      return blobName
+      return await uploadPropertyFile(file, reportType)
     } catch (error) {
       toast.error(`Upload error: ${error}`)
       throw error
@@ -318,7 +312,7 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     if (file) {
       setIsBuildingInspUploading(true)
       try {
-        const blobName = await uploadInspectionReportToAzure(file, 'building')
+        const blobName = await uploadInspectionReportToSupabase(file, 'building')
         setProperty({ ...property, buildinginspazureblob: blobName })
         await saveProperty()
         toast.success('Building inspection report uploaded successfully!')
@@ -336,7 +330,7 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     if (file) {
       setIsPestInspUploading(true)
       try {
-        const blobName = await uploadInspectionReportToAzure(file, 'pest')
+        const blobName = await uploadInspectionReportToSupabase(file, 'pest')
         setProperty({ ...property, pestinspazureblob: blobName })
         await saveProperty()
         toast.success('Pest inspection report uploaded successfully!')
@@ -366,7 +360,7 @@ export default function AddPropertyDialog({  onClose, onSave, property: initialP
     if (file) {
       setIsTitleSrchUploading(true)
       try {
-        const blobName = await uploadInspectionReportToAzure(file, 'titlesrch')
+        const blobName = await uploadInspectionReportToSupabase(file, 'titlesrch')
         setProperty({ ...property, titlesrchcouncilrateazureblob: blobName })
         await saveProperty()
         toast.success('Title search/council rates document uploaded successfully!')

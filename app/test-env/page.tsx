@@ -11,9 +11,8 @@ export default function TestEnvPage() {
     // Get runtime environment variables
     const env = {
       NEXT_PUBLIC_GOOGLE_MAP_API: process.env.NEXT_PUBLIC_GOOGLE_MAP_API || 'NOT SET',
-      NEXT_PUBLIC_AZUREBLOB_CONTAINER: process.env.NEXT_PUBLIC_AZUREBLOB_CONTAINER || 'NOT SET',
-      NEXT_PUBLIC_AZUREBLOB_SASTOKEN: process.env.NEXT_PUBLIC_AZUREBLOB_SASTOKEN || 'NOT SET',
-      NEXT_PUBLIC_AZUREBLOB_SASURL_BASE: process.env.NEXT_PUBLIC_AZUREBLOB_SASURL_BASE || 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
+      NEXT_PUBLIC_SUPABASE_PROFILE_BUCKET: process.env.NEXT_PUBLIC_SUPABASE_PROFILE_BUCKET || 'NOT SET',
     }
     setRuntimeEnv(env)
   }, [])
@@ -34,23 +33,15 @@ export default function TestEnvPage() {
             </span>
           </div>
           <div className="flex">
-            <span className="font-bold w-80">NEXT_PUBLIC_AZUREBLOB_CONTAINER:</span>
-            <span className={process.env.NEXT_PUBLIC_AZUREBLOB_CONTAINER ? 'text-green-600' : 'text-red-600'}>
-              {process.env.NEXT_PUBLIC_AZUREBLOB_CONTAINER || 'NOT SET'}
+            <span className="font-bold w-80">NEXT_PUBLIC_SUPABASE_URL:</span>
+            <span className={process.env.NEXT_PUBLIC_SUPABASE_URL ? 'text-green-600' : 'text-red-600'}>
+              {process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET'}
             </span>
           </div>
           <div className="flex">
-            <span className="font-bold w-80">NEXT_PUBLIC_AZUREBLOB_SASTOKEN:</span>
-            <span className={process.env.NEXT_PUBLIC_AZUREBLOB_SASTOKEN ? 'text-green-600' : 'text-red-600'}>
-              {process.env.NEXT_PUBLIC_AZUREBLOB_SASTOKEN ? 
-                `${process.env.NEXT_PUBLIC_AZUREBLOB_SASTOKEN.substring(0, 20)}...` : 
-                'NOT SET'}
-            </span>
-          </div>
-          <div className="flex">
-            <span className="font-bold w-80">NEXT_PUBLIC_AZUREBLOB_SASURL_BASE:</span>
-            <span className={process.env.NEXT_PUBLIC_AZUREBLOB_SASURL_BASE ? 'text-green-600' : 'text-red-600'}>
-              {process.env.NEXT_PUBLIC_AZUREBLOB_SASURL_BASE || 'NOT SET'}
+            <span className="font-bold w-80">NEXT_PUBLIC_SUPABASE_PROFILE_BUCKET:</span>
+            <span className={process.env.NEXT_PUBLIC_SUPABASE_PROFILE_BUCKET ? 'text-green-600' : 'text-red-600'}>
+              {process.env.NEXT_PUBLIC_SUPABASE_PROFILE_BUCKET || 'NOT SET'}
             </span>
           </div>
         </div>
