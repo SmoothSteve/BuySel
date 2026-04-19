@@ -79,7 +79,7 @@ android {
         applicationId "com.buysel.app"
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 2
+        versionCode 3
         versionName "1"
 
         // The name for the application
