@@ -4,7 +4,10 @@ import { getSupabaseAdminClient } from '@/lib/supabase'
 
 const PHOTO_TABLE_CANDIDATES = ['propertyphoto', 'propertyphotos'] as const
 
-const isMissingTableError = (error: { code?: string } | null) => error?.code === '42P01'
+const isMissingTableError = (error: { code?: string; message?: string } | null) =>
+  error?.code === '42P01' ||
+  error?.code === 'PGRST205' ||
+  error?.message?.includes('Could not find the table') === true
 const isMissingColumnError = (error: { code?: string } | null) => error?.code === '42703'
 
 async function fetchPropertyPhotos(propertyId: number) {
